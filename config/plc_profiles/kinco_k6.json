@@ -1,0 +1,152 @@
+{
+    "name": "Kinco K6",
+    "description": "Mapeo de PLC Kinco K6 series",
+    "notes": "Coils a M (bit memory). Holding registers a D (word memory). Addresses 1-based Modbus convention.",
+    "tags": {
+        "CMD_START": {
+            "type": "coil",
+            "address": 0,
+            "description": "Boton Inicio"
+        },
+        "CMD_CYCLE_STOP": {
+            "type": "coil",
+            "address": 1,
+            "description": "Paro fin de ciclo"
+        },
+        "CMD_PAUSE": {
+            "type": "coil",
+            "address": 2,
+            "description": "Pausa"
+        },
+        "CMD_ESTOP": {
+            "type": "coil",
+            "address": 3,
+            "description": "Paro de emergencia"
+        },
+        "MODE_AUTO": {
+            "type": "coil",
+            "address": 10,
+            "description": "Modo automatico"
+        },
+        "MODE_MANUAL": {
+            "type": "coil",
+            "address": 11,
+            "description": "Modo manual"
+        },
+        "MODE_STEP": {
+            "type": "coil",
+            "address": 12,
+            "description": "Modo paso a paso"
+        },
+        "MODE_DEBUG": {
+            "type": "coil",
+            "address": 13,
+            "description": "Modo depuracion"
+        },
+        "VALVE_1": {
+            "type": "coil",
+            "address": 100,
+            "description": "Valvula neumatica 1"
+        },
+        "VALVE_2": {
+            "type": "coil",
+            "address": 101,
+            "description": "Valvula neumatica 2"
+        },
+        "VALVE_3": {
+            "type": "coil",
+            "address": 102,
+            "description": "Valvula neumatica 3"
+        },
+        "VALVE_4": {
+            "type": "coil",
+            "address": 103,
+            "description": "Valvula neumatica 4"
+        },
+        "VALVE_5": {
+            "type": "coil",
+            "address": 104,
+            "description": "Valvula neumatica 5"
+        },
+        "VALVE_6": {
+            "type": "coil",
+            "address": 105,
+            "description": "Valvula neumatica 6"
+        },
+        "VALVE_7": {
+            "type": "coil",
+            "address": 106,
+            "description": "Valvula neumatica 7"
+        },
+        "VALVE_8": {
+            "type": "coil",
+            "address": 107,
+            "description": "Valvula neumatica 8"
+        },
+        "VALVE_9": {
+            "type": "coil",
+            "address": 108,
+            "description": "Valvula neumatica 9"
+        },
+        "VALVE_10": {
+            "type": "coil",
+            "address": 109,
+            "description": "Valvula neumatica 10"
+        },
+        "SERVO_JOG_FWD": {
+            "type": "coil",
+            "address": 200,
+            "description": "Servo jog adelante"
+        },
+        "SERVO_JOG_REV": {
+            "type": "coil",
+            "address": 201,
+            "description": "Servo jog reversa"
+        },
+        "SENSOR_1": {
+            "type": "discrete_input",
+            "address": 0,
+            "description": "Sensor inductivo/optico 1"
+        },
+        "SENSOR_2": {
+            "type": "discrete_input",
+            "address": 1,
+            "description": "Sensor inductivo/optico 2"
+        },
+        "SERVO_SPEED": {
+            "type": "holding_register",
+            "address": 0,
+            "description": "Velocidad objetivo servo (RPM)"
+        },
+        "SERVO_POS_TARGET": {
+            "type": "holding_register",
+            "address": 1,
+            "description": "Posicion objetivo servo"
+        },
+        "STEP_NUMBER": {
+            "type": "holding_register",
+            "address": 2,
+            "description": "Numero de paso actual"
+        },
+        "MACHINE_STATE": {
+            "type": "holding_register",
+            "address": 3,
+            "description": "Estado maquina (0=Off,1=Auto,2=Manual,3=Step,4=Debug)"
+        },
+        "SERVO_POS_ACTUAL": {
+            "type": "input_register",
+            "address": 0,
+            "description": "Posicion actual servo (lectura)"
+        },
+        "SERVO_ACTUAL_SPEED": {
+            "type": "input_register",
+            "address": 1,
+            "description": "Velocidad actual servo (lectura)"
+        },
+        "SERVO_TORQUE": {
+            "type": "input_register",
+            "address": 2,
+            "description": "Torque actual servo (lectura)"
+        }
+    }
+}

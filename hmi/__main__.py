@@ -1,0 +1,1 @@
+"""HMI Industrial - Paquete principal."""
