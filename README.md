@@ -1,5 +1,8 @@
 # HMI Industrial — Máquina Ma1 (Cepilladora / Brush Mask)
 
+> **Para agentes de desarrollo (vibe coding):** lee primero [`VCG.md`](VCG.md) —
+> contiene la guía del proyecto con qué archivo modificar según la tarea.
+
 HMI industrial **PLC-agnóstico** (Python + PySide6 + pymodbus) para la reprogramación
 y control de una cepilladora/máscara brush ("Ma1"). Se comunica con el PLC por
 **Modbus TCP** y el mapeo de variables es totalmente configurable por perfil JSON,
