@@ -1,7 +1,7 @@
 """Servidor Modbus TCP simulado para pruebas sin PLC fisico.
 
 Uso: .venv/bin/python tests/run_simulator.py [ip] [puerto] [perfil]
-Por defecto: 0.0.0.0:5020 con el perfil kinco_k5s.json
+Por defecto: 0.0.0.0:5020 con el perfil generic_kinco.json
 
 Nota: No ejecuta la logica ST de la maquina; solo responde a las direcciones
 del perfil para validar la comunicacion HMI <-> PLC y mostrar sensores/
@@ -38,7 +38,7 @@ def load_tags(profile_name: str) -> dict:
 def main() -> int:
     ip = sys.argv[1] if len(sys.argv) > 1 else "0.0.0.0"
     port = int(sys.argv[2]) if len(sys.argv) > 2 else 5020
-    profile_name = sys.argv[3] if len(sys.argv) > 3 else "kinco_k5s"
+    profile_name = sys.argv[3] if len(sys.argv) > 3 else "generic_kinco"
 
     tags = load_tags(profile_name)
     co = [0] * 2000

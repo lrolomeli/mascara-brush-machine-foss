@@ -35,7 +35,7 @@ def main() -> int:
     t.start()
     time.sleep(0.6)
 
-    profile_path = PROJECT_ROOT / "config" / "plc_profiles" / "kinco_k5s.json"
+    profile_path = PROJECT_ROOT / "config" / "plc_profiles" / "generic_kinco.json"
     prof = PLCProfile.from_json(profile_path)
     print(f"Perfil: {prof.name} ({len(prof.tags)} tags)")
 

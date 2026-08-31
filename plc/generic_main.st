@@ -1,5 +1,5 @@
 // =============================================================================
-// KINCO K5s - Programa Principal de la Maquina Ma1 (Cepilladora / Brush Mask)
+// KINCO (GENERICO, K5s/K615S 16DT) - Programa Principal Maquina Ma1
 // =============================================================================
 // Portado y CORREGIDO a partir de docs/ma1st.st
 //
@@ -19,7 +19,7 @@
 //   [3] Se anaden alarmas H8 (baja presion = NOT S23) y H3 (nylon = S8),
 //       y se mapea la salida fisica real Y24 (CACHADOR) en el multiplexor.
 //
-// EQUIVALENCIAS DE DIRECCIONAMIENTO KINCO K5s (Modbus TCP):
+// EQUIVALENCIAS DE DIRECCIONAMIENTO KINCO (Modbus TCP):
 //   - Coils de comando   (HMI->PLC):  S5_START, S3_STOP, S1_EMERGENCY_STOP,
 //                                      S_MANUAL, S_STEP_BY_STEP, BTN_STEP ...
 //   - Coils forzado CMD  (HMI->PLC):  CMD_Y1..Y18, CMD_Y24, CMD_M1..M3

@@ -23,6 +23,7 @@ from hmi.comms.modbus_worker import ModbusWorker
 from hmi.ui.views.auto_view import AutoView
 from hmi.ui.views.debug_view import DebugView
 from hmi.ui.views.manual_view import ManualView
+from hmi.ui.views.outputs_debug_view import OutputsDebugView
 from hmi.ui.views.servo_view import ServoView
 from hmi.ui.views.settings_view import SettingsView
 
@@ -81,11 +82,13 @@ class MainWindow(QMainWindow):
 
         tag_names = list(self._worker.adapter.profile.tags.keys())
         self._debug_view = DebugView(tag_names)
+        self._outputs_debug_view = OutputsDebugView()
         self._settings_view = SettingsView()
 
         self._tabs.addTab(self._auto_view, "Produccion")
         self._tabs.addTab(self._manual_view, "Manual / Paso")
         self._tabs.addTab(self._servo_view, "Servo")
+        self._tabs.addTab(self._outputs_debug_view, "Depar. Salidas")
         self._tabs.addTab(self._debug_view, "Depuracion")
         self._tabs.addTab(self._settings_view, "Configuracion")
 
@@ -109,6 +112,9 @@ class MainWindow(QMainWindow):
             lambda tag, v: self._worker.enqueue_write(tag, v))
         self._manual_view.step_next.connect(self._on_step_next)
 
+        self._outputs_debug_view.output_command.connect(
+            lambda tag, v: self._worker.enqueue_write(tag, v))
+
         self._servo_view.jog_fwd.connect(
             lambda v: self._worker.enqueue_write("SERVO_JOG_FWD", v))
         self._servo_view.jog_rev.connect(
@@ -128,6 +134,7 @@ class MainWindow(QMainWindow):
     def _on_data(self, data: dict) -> None:
         self._auto_view.update_data(data)
         self._manual_view.update_data(data)
+        self._outputs_debug_view.update_data(data)
         self._servo_view.update_data(data)
 
     @Slot(bool)

@@ -2,7 +2,7 @@
 
 Este documento describe el mapeo de variables logicas (nombres simbolicos)
 utilizadas por el HMI, y su correspondencia con las variables reales del
-PLC Kinco K5s via el perfil `config/plc_profiles/kinco_k5s.json`.
+PLC Kinco (generico: K5s / K615S 16DT) via el perfil `config/plc_profiles/generic_kinco.json`.
 
 El HMI referencia **nombres simbolicos**; el archivo de perfil define la
 direccion fisica Modbus para cada nombre. Cambiar de PLC = cambiar de perfil,

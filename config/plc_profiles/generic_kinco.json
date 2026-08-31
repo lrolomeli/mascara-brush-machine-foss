@@ -1,7 +1,7 @@
 {
-    "name": "Kinco K5s",
-    "description": "Mapeo de PLC Kinco K5s (estructurado) de la maquina Ma1 - Cepilladora/Mascara Brush",
-    "notes": "Perfil real de la maquina. Incluye tags abstractos del HMI (CMD_*, SERVO_*) y tags reales del PLC (S*, Y*, M*, CMD_Y*). El multiplexor SEL(S_MANUAL, Auto_*, CMD_*) selecciona automatico o forzado manual.",
+    "name": "Kinco (Genérico ST)",
+    "description": "Mapeo generico de PLC Kinco (K5s/K615S, Structured Text) de la maquina Ma1 - Cepilladora/Mascara Brush",
+    "notes": "Perfil real de la maquina, independiente del modelo de PLC Kinco (p.ej. K5s, K615S 16DT). Incluye tags abstractos del HMI (CMD_*, SERVO_*) y tags reales del PLC (S*, Y*, M*, CMD_Y*). El multiplexor SEL(S_MANUAL, Auto_*, CMD_*) selecciona automatico o forzado manual.",
     "tags": {
         "CMD_START": {
             "type": "coil",
@@ -183,6 +183,11 @@
             "address": 102,
             "description": "Forzado manual Y3 chucks"
         },
+        "CMD_Y5": {
+            "type": "coil",
+            "address": 104,
+            "description": "Forzado manual Y5 sale pinza"
+        },
         "CMD_Y6": {
             "type": "coil",
             "address": 105,
@@ -322,6 +327,11 @@
             "type": "coil",
             "address": 1002,
             "description": "Salida fisica Y3 chucks"
+        },
+        "Y5": {
+            "type": "coil",
+            "address": 1004,
+            "description": "Salida fisica Y5 sale pinza"
         },
         "Y6": {
             "type": "coil",
