@@ -105,12 +105,9 @@ class MainWindow(QMainWindow):
         self._auto_view.cmd_estop.connect(
             lambda v: self._worker.enqueue_write("CMD_ESTOP", v))
 
-        self._manual_view.valve_command.connect(
-            lambda n, v: self._worker.enqueue_write(f"VALVE_{n}", v))
-        self._manual_view.step_next.connect(
-            lambda: self._worker.enqueue_write(
-                "STEP_NUMBER",
-                self._worker.adapter.profile.tags.get("STEP_NUMBER") and 0))
+        self._manual_view.output_command.connect(
+            lambda tag, v: self._worker.enqueue_write(tag, v))
+        self._manual_view.step_next.connect(self._on_step_next)
 
         self._servo_view.jog_fwd.connect(
             lambda v: self._worker.enqueue_write("SERVO_JOG_FWD", v))
@@ -152,6 +149,12 @@ class MainWindow(QMainWindow):
     def _on_debug_write(self, tag: str, value: str) -> None:
         parsed = self._parse_value(value)
         self._worker.enqueue_write(tag, parsed)
+
+    @Slot()
+    def _on_step_next(self) -> None:
+        # Pulso en BTN_STEP para avanzar un paso en modo paso a paso
+        self._worker.enqueue_write("BTN_STEP", True)
+        self._worker.enqueue_write("BTN_STEP", False)
 
     @staticmethod
     def _parse_value(raw: str) -> bool | int:

@@ -35,7 +35,7 @@ def main() -> int:
     t.start()
     time.sleep(0.6)
 
-    profile_path = PROJECT_ROOT / "config" / "plc_profiles" / "generic_modbus.json"
+    profile_path = PROJECT_ROOT / "config" / "plc_profiles" / "kinco_k5s.json"
     prof = PLCProfile.from_json(profile_path)
     print(f"Perfil: {prof.name} ({len(prof.tags)} tags)")
 
@@ -44,10 +44,10 @@ def main() -> int:
     print("[OK] Conexion establecida")
 
     tests = [
-        ("CMD_START", True),
-        ("SERVO_SPEED", 1500),
-        ("SERVO_POS_TARGET", 8000),
-        ("VALVE_3", True),
+        ("S5_START", True),
+        ("CMD_Y3", True),
+        ("CMD_M1", True),
+        ("BTN_STEP", False),
     ]
     for name, val in tests:
         assert ad.write_tag(name, val), f"write fallo: {name}"
@@ -57,9 +57,9 @@ def main() -> int:
 
     time.sleep(0.2)
     data = ad.read_all_inputs()
-    assert data["CMD_START"] is True
-    assert data["SERVO_SPEED"] == 1500
-    assert data["VALVE_3"] is True
+    assert data["S5_START"] is True
+    assert data["CMD_Y3"] is True
+    assert data["CMD_M1"] is True
     print(f"[OK] read_all_inputs: {len(data)} tags")
 
     ad.disconnect()

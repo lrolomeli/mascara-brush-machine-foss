@@ -1,0 +1,472 @@
+{
+    "name": "Kinco K5s",
+    "description": "Mapeo de PLC Kinco K5s (estructurado) de la maquina Ma1 - Cepilladora/Mascara Brush",
+    "notes": "Perfil real de la maquina. Incluye tags abstractos del HMI (CMD_*, SERVO_*) y tags reales del PLC (S*, Y*, M*, CMD_Y*). El multiplexor SEL(S_MANUAL, Auto_*, CMD_*) selecciona automatico o forzado manual.",
+    "tags": {
+        "CMD_START": {
+            "type": "coil",
+            "address": 0,
+            "description": "HMI -> Boton Arranque (equivalente S5_START)"
+        },
+        "CMD_CYCLE_STOP": {
+            "type": "coil",
+            "address": 1,
+            "description": "HMI -> Paro fin de ciclo (equivalente S3_STOP)"
+        },
+        "CMD_PAUSE": {
+            "type": "coil",
+            "address": 2,
+            "description": "HMI -> Pausa (reservado)"
+        },
+        "CMD_ESTOP": {
+            "type": "coil",
+            "address": 3,
+            "description": "HMI -> Paro de emergencia (equivalente S1_EMERGENCY_STOP NC)"
+        },
+        "MODE_AUTO": {
+            "type": "coil",
+            "address": 4,
+            "description": "HMI -> Modo automatico"
+        },
+        "MODE_MANUAL": {
+            "type": "coil",
+            "address": 5,
+            "description": "HMI -> Modo manual (S_MANUAL)"
+        },
+        "MODE_STEP": {
+            "type": "coil",
+            "address": 6,
+            "description": "HMI -> Modo paso a paso (S_STEP_BY_STEP)"
+        },
+        "MODE_DEBUG": {
+            "type": "coil",
+            "address": 7,
+            "description": "HMI -> Modo depuracion"
+        },
+        "S_MANUAL": {
+            "type": "coil",
+            "address": 5,
+            "description": "Selector modo manual Fisico"
+        },
+        "S_STEP_BY_STEP": {
+            "type": "coil",
+            "address": 6,
+            "description": "Selector paso a paso Fisico"
+        },
+        "BTN_STEP": {
+            "type": "coil",
+            "address": 20,
+            "description": "Boton avance de paso"
+        },
+        "S5_START": {
+            "type": "coil",
+            "address": 0,
+            "description": "Boton START fisico S5"
+        },
+        "S3_STOP": {
+            "type": "coil",
+            "address": 1,
+            "description": "Boton STOP fisico S3"
+        },
+        "S1_EMERGENCY_STOP": {
+            "type": "coil",
+            "address": 3,
+            "description": "Paro emergencia S1 (NC)"
+        },
+        "S4_CONTINUOUS": {
+            "type": "coil",
+            "address": 8,
+            "description": "Selector ciclo continuo S4"
+        },
+        "S2_SINGLE": {
+            "type": "coil",
+            "address": 9,
+            "description": "Selector ciclo unico S2"
+        },
+        "SENSOR_1": {
+            "type": "discrete_input",
+            "address": 8,
+            "description": "HMI -> Sensor generico 1 (S8 cerda)"
+        },
+        "SENSOR_2": {
+            "type": "discrete_input",
+            "address": 23,
+            "description": "HMI -> Sensor generico 2 (S23 presion)"
+        },
+        "S8": {
+            "type": "discrete_input",
+            "address": 8,
+            "description": "Sensor de cerda/nylon"
+        },
+        "S9": {
+            "type": "discrete_input",
+            "address": 9,
+            "description": "Sensor orientador/fin de alambre"
+        },
+        "S10": {
+            "type": "discrete_input",
+            "address": 10,
+            "description": "Sensor pinza posicionada"
+        },
+        "S11": {
+            "type": "discrete_input",
+            "address": 11,
+            "description": "Sensor rasurador listo"
+        },
+        "S12": {
+            "type": "discrete_input",
+            "address": 12,
+            "description": "Sensor tijera arriba"
+        },
+        "S13": {
+            "type": "discrete_input",
+            "address": 13,
+            "description": "Sensor cepillo cortado"
+        },
+        "S14": {
+            "type": "discrete_input",
+            "address": 14,
+            "description": "Sensor pinza abajo"
+        },
+        "S15": {
+            "type": "discrete_input",
+            "address": 15,
+            "description": "Sensor pinza fuera"
+        },
+        "S16": {
+            "type": "discrete_input",
+            "address": 16,
+            "description": "Sensor pinza arriba"
+        },
+        "S17": {
+            "type": "discrete_input",
+            "address": 17,
+            "description": "Sensor pinza adentro"
+        },
+        "S18": {
+            "type": "discrete_input",
+            "address": 18,
+            "description": "Sensor cuchilla/dobla alambre"
+        },
+        "S19": {
+            "type": "discrete_input",
+            "address": 19,
+            "description": "Sensor regresa dobla alambre"
+        },
+        "S20": {
+            "type": "discrete_input",
+            "address": 20,
+            "description": "Sensor lengueta final carrera"
+        },
+        "S21": {
+            "type": "discrete_input",
+            "address": 21,
+            "description": "Sensor peine/fin alambre atras"
+        },
+        "S22": {
+            "type": "discrete_input",
+            "address": 22,
+            "description": "Sensor empuja alambre adelante"
+        },
+        "S23": {
+            "type": "discrete_input",
+            "address": 23,
+            "description": "Sensor presion neumatica"
+        },
+        "CMD_Y1": {
+            "type": "coil",
+            "address": 100,
+            "description": "Forzado manual Y1 orientadores"
+        },
+        "CMD_Y3": {
+            "type": "coil",
+            "address": 102,
+            "description": "Forzado manual Y3 chucks"
+        },
+        "CMD_Y6": {
+            "type": "coil",
+            "address": 105,
+            "description": "Forzado manual Y6 cabezal rasurado"
+        },
+        "CMD_Y7": {
+            "type": "coil",
+            "address": 106,
+            "description": "Forzado manual Y7 tijera arriba/abajo"
+        },
+        "CMD_Y8": {
+            "type": "coil",
+            "address": 107,
+            "description": "Forzado manual Y8 abre/cierra tijera"
+        },
+        "CMD_Y9": {
+            "type": "coil",
+            "address": 108,
+            "description": "Forzado manual Y9 sube/baja pinza"
+        },
+        "CMD_Y10": {
+            "type": "coil",
+            "address": 109,
+            "description": "Forzado manual Y10 abre/cierra pinza"
+        },
+        "CMD_Y11": {
+            "type": "coil",
+            "address": 110,
+            "description": "Forzado manual Y11 centrar pinza"
+        },
+        "CMD_Y12": {
+            "type": "coil",
+            "address": 111,
+            "description": "Forzado manual Y12 meter/sacar pinza"
+        },
+        "CMD_Y14": {
+            "type": "coil",
+            "address": 113,
+            "description": "Forzado manual Y14 rasador"
+        },
+        "CMD_Y15": {
+            "type": "coil",
+            "address": 114,
+            "description": "Forzado manual Y15 peine/dobladora"
+        },
+        "CMD_Y16": {
+            "type": "coil",
+            "address": 115,
+            "description": "Forzado manual Y16 lengueta"
+        },
+        "CMD_Y17": {
+            "type": "coil",
+            "address": 116,
+            "description": "Forzado manual Y17 cizalla alambre"
+        },
+        "CMD_Y18": {
+            "type": "coil",
+            "address": 117,
+            "description": "Forzado manual Y18 empujar alambre"
+        },
+        "CMD_Y24": {
+            "type": "coil",
+            "address": 123,
+            "description": "Forzado manual Y24/CATCHER cachador"
+        },
+        "CMD_M1": {
+            "type": "coil",
+            "address": 200,
+            "description": "Forzado manual M1 retorcido"
+        },
+        "CMD_M2": {
+            "type": "coil",
+            "address": 201,
+            "description": "Forzado manual M2 rasurado"
+        },
+        "CMD_M3": {
+            "type": "coil",
+            "address": 202,
+            "description": "Forzado manual M3 aspirado"
+        },
+        "VALVE_1": {
+            "type": "coil",
+            "address": 100,
+            "description": "HMI toggle manual -> CMD_Y1"
+        },
+        "VALVE_2": {
+            "type": "coil",
+            "address": 102,
+            "description": "HMI toggle manual -> CMD_Y3"
+        },
+        "VALVE_3": {
+            "type": "coil",
+            "address": 105,
+            "description": "HMI toggle manual -> CMD_Y6"
+        },
+        "VALVE_4": {
+            "type": "coil",
+            "address": 106,
+            "description": "HMI toggle manual -> CMD_Y7"
+        },
+        "VALVE_5": {
+            "type": "coil",
+            "address": 107,
+            "description": "HMI toggle manual -> CMD_Y8"
+        },
+        "VALVE_6": {
+            "type": "coil",
+            "address": 108,
+            "description": "HMI toggle manual -> CMD_Y9"
+        },
+        "VALVE_7": {
+            "type": "coil",
+            "address": 109,
+            "description": "HMI toggle manual -> CMD_Y10"
+        },
+        "VALVE_8": {
+            "type": "coil",
+            "address": 110,
+            "description": "HMI toggle manual -> CMD_Y11"
+        },
+        "VALVE_9": {
+            "type": "coil",
+            "address": 111,
+            "description": "HMI toggle manual -> CMD_Y12"
+        },
+        "VALVE_10": {
+            "type": "coil",
+            "address": 113,
+            "description": "HMI toggle manual -> CMD_Y14"
+        },
+        "Y1": {
+            "type": "coil",
+            "address": 1000,
+            "description": "Salida fisica Y1 orientadores"
+        },
+        "Y3": {
+            "type": "coil",
+            "address": 1002,
+            "description": "Salida fisica Y3 chucks"
+        },
+        "Y6": {
+            "type": "coil",
+            "address": 1005,
+            "description": "Salida fisica Y6"
+        },
+        "Y7": {
+            "type": "coil",
+            "address": 1006,
+            "description": "Salida fisica Y7"
+        },
+        "Y8": {
+            "type": "coil",
+            "address": 1007,
+            "description": "Salida fisica Y8"
+        },
+        "Y9": {
+            "type": "coil",
+            "address": 1008,
+            "description": "Salida fisica Y9"
+        },
+        "Y10": {
+            "type": "coil",
+            "address": 1009,
+            "description": "Salida fisica Y10"
+        },
+        "Y11": {
+            "type": "coil",
+            "address": 1010,
+            "description": "Salida fisica Y11"
+        },
+        "Y12": {
+            "type": "coil",
+            "address": 1011,
+            "description": "Salida fisica Y12"
+        },
+        "Y14": {
+            "type": "coil",
+            "address": 1013,
+            "description": "Salida fisica Y14"
+        },
+        "Y15": {
+            "type": "coil",
+            "address": 1014,
+            "description": "Salida fisica Y15"
+        },
+        "Y16": {
+            "type": "coil",
+            "address": 1015,
+            "description": "Salida fisica Y16"
+        },
+        "Y17": {
+            "type": "coil",
+            "address": 1016,
+            "description": "Salida fisica Y17"
+        },
+        "Y18": {
+            "type": "coil",
+            "address": 1017,
+            "description": "Salida fisica Y18"
+        },
+        "Y24": {
+            "type": "coil",
+            "address": 1023,
+            "description": "Salida fisica Y24/CACHADOR"
+        },
+        "M1": {
+            "type": "coil",
+            "address": 1100,
+            "description": "Salida fisica M1 retorcido"
+        },
+        "M2": {
+            "type": "coil",
+            "address": 1101,
+            "description": "Salida fisica M2 rasurado"
+        },
+        "M3": {
+            "type": "coil",
+            "address": 1102,
+            "description": "Salida fisica M3 aspirado"
+        },
+        "H8": {
+            "type": "coil",
+            "address": 1200,
+            "description": "Alarma baja presion (H8 := NOT S23)"
+        },
+        "H3": {
+            "type": "coil",
+            "address": 1201,
+            "description": "Alarma nylon/cerda (H3 := S8)"
+        },
+        "SERVO_JOG_FWD": {
+            "type": "coil",
+            "address": 300,
+            "description": "HMI servo jog adelante (reservado)"
+        },
+        "SERVO_JOG_REV": {
+            "type": "coil",
+            "address": 301,
+            "description": "HMI servo jog reversa (reservado)"
+        },
+        "Paso_Alambre": {
+            "type": "holding_register",
+            "address": 400,
+            "description": "Estado rama alambre"
+        },
+        "Paso_Pinza": {
+            "type": "holding_register",
+            "address": 401,
+            "description": "Estado rama pinza"
+        },
+        "STEP_NUMBER": {
+            "type": "holding_register",
+            "address": 401,
+            "description": "HMI paso actual (Paso_Pinza)"
+        },
+        "MACHINE_STATE": {
+            "type": "holding_register",
+            "address": 402,
+            "description": "HMI estado maquina"
+        },
+        "SERVO_SPEED": {
+            "type": "holding_register",
+            "address": 410,
+            "description": "HMI velocidad servo (reservado)"
+        },
+        "SERVO_POS_TARGET": {
+            "type": "holding_register",
+            "address": 411,
+            "description": "HMI posicion target servo (reservado)"
+        },
+        "SERVO_POS_ACTUAL": {
+            "type": "input_register",
+            "address": 400,
+            "description": "HMI posicion actual servo (reservado)"
+        },
+        "SERVO_ACTUAL_SPEED": {
+            "type": "input_register",
+            "address": 401,
+            "description": "HMI velocidad actual servo (reservado)"
+        },
+        "SERVO_TORQUE": {
+            "type": "input_register",
+            "address": 402,
+            "description": "HMI torque actual servo (reservado)"
+        }
+    }
+}

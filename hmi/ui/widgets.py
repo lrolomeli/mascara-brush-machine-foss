@@ -115,7 +115,7 @@ class ValveToggle(QWidget):
 
     toggled_signal = Signal(int, bool)
 
-    def __init__(self, valve_number: int, parent=None):
+    def __init__(self, valve_number: int, label: str | None = None, parent=None):
         super().__init__(parent)
         self._number = valve_number
         self._active = False
@@ -132,10 +132,16 @@ class ValveToggle(QWidget):
         self._btn.toggled.connect(self._on_toggled)
         layout.addWidget(self._btn)
 
-        lbl = QLabel(f"Valvula {valve_number}")
-        lbl.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        lbl.setStyleSheet("color: #aaaaaa; font-size: 10px;")
-        layout.addWidget(lbl)
+        self._lbl = QLabel(label or f"Salida {valve_number}")
+        self._lbl.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        self._lbl.setStyleSheet("color: #aaaaaa; font-size: 10px;")
+        layout.addWidget(self._lbl)
+
+    def set_label_text(self, text: str) -> None:
+        self._lbl.setText(text)
+
+    def set_button_text(self, text: str) -> None:
+        self._btn.setText(text)
 
     def _on_toggled(self, checked: bool) -> None:
         self._active = checked
