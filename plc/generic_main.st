@@ -1,7 +1,7 @@
 // =============================================================================
 // KINCO (GENERICO, K5s/K615S 16DT) - Programa Principal Maquina Ma1
 // =============================================================================
-// Portado y CORREGIDO a partir de docs/ma1st.st
+// Portado y CORREGIDO a partir del ST original de la maquina
 //
 // DISENO:
 //   - Dos maquinas de estado paralelas:
@@ -12,7 +12,7 @@
 //   - Diagnostico conservado: S_MANUAL (fuerza salidas con CMD_Yx/CMD_Mx),
 //     S_STEP_BY_STEP (congela el avance) y BTN_STEP (avance manual de paso).
 //
-// CORRECCIONES RESPECTO A ma1st.st:
+// CORRECCIONES RESPECTO AL ST ORIGINAL DE LA MAQUINA:
 //   [1] Paso 90 de Paso_Pinza ya no usa T_NEW (quedaba colgado). Ahora cierra
 //       el ciclo con el sensor S13 (cepillado cortado).
 //   [2] Se anade M3 (aspirado) al multiplexor, solo forzable manual.

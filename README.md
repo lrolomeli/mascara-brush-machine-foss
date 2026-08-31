@@ -157,10 +157,9 @@ Selecciona el perfil activo en `config/app_config.json` o en la pestaña Configu
 - [`docs/requirements.md`](docs/requirements.md) — requisitos de hardware y modos.
 - [`plc/generic_main.st`](plc/generic_main.st) — rutina ST de trabajo del PLC
   (portada y corregida; 2 ramas paralelas + multiplexor Auto/Manual).
-- `docs/ma1st.st`, `docs/ma1-rutina-debug.st`, `docs/inoutmem.csv` — diseños y
-  tabla de I/O reales de la máquina (referencia).
-- `docs/activacion-manual-valvula.st` — programa de diagnóstico para forzar
-  salidas una a una.
+- [`docs/maquina_referencia.md`](docs/maquina_referencia.md) — referencia de
+  diseño y depuración de la máquina: I/O real, tablas de pasos (rama paralela y
+  secuencia de depuración) y forzado manual de salidas.
 
 ---
 

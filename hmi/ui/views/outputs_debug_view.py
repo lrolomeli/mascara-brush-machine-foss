@@ -2,7 +2,7 @@
 
 Permite probar cada salida fisica una a una (forzado manual) y observar
 en vivo la reaccion de los sensores. Complementa la vista Manual: esta es
-especifica para el diagnostico individual por salida (activacion-manual-valvula.st).
+especifica para el diagnostico individual por salida.
 """
 
 from __future__ import annotations
