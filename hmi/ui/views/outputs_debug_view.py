@@ -1,8 +1,7 @@
-"""Vista de Depuracion de Salidas (Modo Manual).
+"""Vista de Actuadores (Modo Manual).
 
-Permite probar cada salida fisica una a una (forzado manual) y observar
-en vivo la reaccion de los sensores. Complementa la vista Manual: esta es
-especifica para el diagnostico individual por salida.
+Permite probar cada salida fisica una a una (forzado manual).
+Requiere modo MANUAL para funcionar.
 """
 
 from __future__ import annotations
@@ -11,15 +10,13 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QGridLayout,
-    QHBoxLayout,
     QLabel,
     QVBoxLayout,
     QWidget,
 )
 
-from hmi.ui.widgets import IndustrialButton, SectionFrame, StatusLED, ValveToggle
+from hmi.ui.widgets import SectionFrame, ValveToggle
 
-# Salidas forzables una a una: (tag CMD, etiqueta)
 DEBUG_OUTPUTS = [
     ("CMD_Y1", "Y1 Orientadores"),
     ("CMD_Y3", "Y3 Chucks"),
@@ -42,38 +39,17 @@ DEBUG_OUTPUTS = [
     ("CMD_M3", "M3 Aspirado"),
 ]
 
-# Sensores a mostrar en vivo
-SENSORS = [
-    ("S8", "Cerda"),
-    ("S9", "Orientador"),
-    ("S10", "Pinza Pos"),
-    ("S11", "Rasurador"),
-    ("S12", "Tijera Arr"),
-    ("S13", "Cepillo"),
-    ("S14", "Pinza Abajo"),
-    ("S15", "Pinza Fuera"),
-    ("S16", "Pinza Arriba"),
-    ("S17", "Pinza Adent"),
-    ("S18", "Cuchilla"),
-    ("S19", "R. Alambre"),
-    ("S20", "Lengueta"),
-    ("S21", "Peine Atras"),
-    ("S22", "Alambre Adv"),
-    ("S23", "Presion"),
-]
-
 COLS = 5
 
 
 class OutputsDebugView(QWidget):
-    """Vista de depuracion individual de salidas y lectura de sensores."""
+    """Vista de actuadores con forzado manual."""
 
     output_command = Signal(str, bool)
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._toggle_widgets: dict[str, ValveToggle] = {}
-        self._sensor_leds: dict[str, StatusLED] = {}
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -81,16 +57,25 @@ class OutputsDebugView(QWidget):
         root.setSpacing(12)
         root.setContentsMargins(20, 20, 20, 20)
 
-        title = QLabel("DEPURACIÓN DE SALIDAS (FORZADO MANUAL)")
+        title = QLabel("ACTUADORES (FORZADO MANUAL)")
         title.setFont(QFont("Segoe UI", 18, QFont.Weight.Bold))
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title.setStyleSheet("color: #e94560; padding: 8px;")
         root.addWidget(title)
 
-        notice = QLabel("Activa MODE_MANUAL en el PLC para forzar salidas. Prueba una a una y observa los sensores.")
-        notice.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        notice.setStyleSheet("color: #ff9800; font-size: 12px;")
-        root.addWidget(notice)
+        self._warning_label = QLabel("Cambia a modo MANUAL para activar actuadores")
+        self._warning_label.setFont(QFont("Segoe UI", 13, QFont.Weight.Bold))
+        self._warning_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._warning_label.setStyleSheet("""
+            QLabel {
+                color: #ff9800;
+                background-color: #3d2e00;
+                border: 2px solid #ff9800;
+                border-radius: 8px;
+                padding: 15px;
+            }
+        """)
+        root.addWidget(self._warning_label)
 
         out_frame = SectionFrame("Salidas")
         outl = out_frame.content_layout
@@ -109,40 +94,29 @@ class OutputsDebugView(QWidget):
         outl.addLayout(grid)
         root.addWidget(out_frame)
 
-        sens_frame = SectionFrame("Sensores en Vivo")
-        sl = sens_frame.content_layout
-
-        sens_row1 = QHBoxLayout()
-        sens_row2 = QHBoxLayout()
-        sens_row1.setSpacing(10)
-
-        # Repartir sensores en dos filas
-        half = (len(SENSORS) + 1) // 2
-        for i, (tag, name) in enumerate(SENSORS):
-            led = StatusLED(f"{tag} {name}", size=16)
-            self._sensor_leds[tag] = led
-            row = sens_row1 if i < half else sens_row2
-            row.addWidget(led)
-
-        sl.addLayout(sens_row1)
-        sl.addLayout(sens_row2)
-        root.addWidget(sens_frame)
-
         root.addStretch()
 
     def _on_toggled(self, index: int, state: bool) -> None:
         tag = DEBUG_OUTPUTS[index - 1][0]
         self.output_command.emit(tag, state)
 
+    def _set_toggles_enabled(self, enabled: bool) -> None:
+        for vt in self._toggle_widgets.values():
+            vt.setEnabled(enabled)
+
+    def set_mode(self, is_manual: bool) -> None:
+        if is_manual:
+            self._warning_label.hide()
+            self._set_toggles_enabled(True)
+        else:
+            self._warning_label.show()
+            self._set_toggles_enabled(False)
+
     def update_data(self, data: dict) -> None:
-        # Actualizar estado de los toggles desde el PLC (memoria CMD leida)
+        is_manual = data.get("MODE_MANUAL", False)
+        self.set_mode(is_manual)
+
         for tag, _ in DEBUG_OUTPUTS:
             v = data.get(tag)
             if v is not None:
                 self._toggle_widgets[tag].set_state(v)
-
-        # Actualizar LEDs de sensores
-        for tag, _ in SENSORS:
-            led = self._sensor_leds.get(tag)
-            if led and tag in data:
-                led.set_on(bool(data[tag]))

@@ -31,11 +31,11 @@ Auto/Manual** (`SEL(S_MANUAL, Auto_*, CMD_*)`) para forzar salidas desde el HMI.
 | `hmi/main.py` | Punto de entrada. Configura tema oscuro, carga `app_config.json`, resuelve el perfil activo, crea `ModbusTCPAdapter` + `ModbusWorker` + `MainWindow`. |
 | `hmi/comms/plc_adapter.py` | Capa Modbus. Clases: `TagInfo` (tipo+dirección), `PLCProfile` (lee JSON, método `from_json`), `PLCAdapter` (ABC), `ModbusTCPAdapter` (lectura en batch con `_merge_ranges`, escritura por tag). **NO tocar salvo cambio de protocolo.** |
 | `hmi/comms/modbus_worker.py` | `QThread` de polling (100 ms). Señales: `data_ready(dict)`, `connection_status(bool)`, `error_occurred(str)`. Métodos: `enqueue_write(tag, value)`, `configure(...)`, `load_new_profile(path)`, `stop()`. |
-| `hmi/ui/main_window.py` | Ventana principal. Crea las 6 pestañas, **conecta las señales de cada view al worker** y llama `update_data(data)` en `_on_data`. |
-| `hmi/ui/widgets.py` | Componentes reutilizables: `ValveToggle` (señal `toggled_signal(int, bool)`), `StatusLED`, `SectionFrame`, `IndustrialButton`, `ServoPositionDisplay`. |
-| `hmi/ui/views/*.py` | Una clase por pestaña: `auto_view`, `manual_view`, `servo_view`, `outputs_debug_view`, `debug_view`, `settings_view`. |
+| `hmi/ui/main_window.py` | Ventana principal. Contiene `AlarmBar`, `ModeToggle`, panel de controles, y 5 pestañas. Conecta señales de cada view al worker y llama `update_data(data)` en `_on_data`. |
+| `hmi/ui/widgets.py` | Componentes reutilizables: `ModeToggle`, `ValveToggle`, `StatusLED`, `SectionFrame`, `IndustrialButton`, `ServoPositionDisplay`, `SimpleLED`. |
+| `hmi/ui/views/*.py` | Una clase por pestaña: `manual_view` (Depuracion por pasos), `servo_view` (reservada), `sensors_view`, `outputs_debug_view` (Actuadores), `debug_view` (Depuracion), `settings_view` (Configuracion). |
 | `config/app_config.json` | IP/puerto/`unit_id`/`timeout_ms`/`active_profile` + polling + tamaño de pantalla. |
-| `config/plc_profiles/generic_kinco.json` | **Perfil ACTIVO** (95 tags): mapeo simbólico→Modbus real. Otros: `generic_modbus.json`, `delta_dvp.json`. |
+| `config/plc_profiles/generic_kinco.json` | **Perfil ACTIVO** (95 tags): mapeo simbólico→Modbus real. Tags clave: `MODE_AUTO`(4), `MODE_MANUAL`(5), `MODE_STEP`(6), `MODE_DEBUG`(7). |
 | `plc/generic_main.st` | Rutina ST de producción (2 ramas + mux Auto/Manual + alarmas). |
 | `tests/run_simulator.py` + `run_simulator.sh` | Simulador Modbus TCP con datos de demo (para probar sin PLC físico). |
 | `tests/test_adapter.py` | Test de escritura/lectura del adapter contra un simulador interno. |
@@ -46,7 +46,51 @@ Auto/Manual** (`SEL(S_MANUAL, Auto_*, CMD_*)`) para forzar salidas desde el HMI.
 
 ---
 
-## 3. Flujo de datos (cómo funciona)
+## 3. Estructura de la Interfaz
+
+### Layout Principal
+
+```
+┌────────────────────────────────────────────────────────┐
+│ SIDEBAR │            ALARM BAR               │ CONTROLS │
+│  (NAV)  │    (visible solo con alarmas)      │  PANEL   │
+│         │─────────────────────────────────────│          │
+│         │              PESTANA ACTIVA          │          │
+│         │            (MAIN CONTENT)            │          │
+└─────────┴──────────────────────────────────────┴──────────┘
+```
+
+### Panel de Controles (derecha)
+
+```
+┌─────────────────────┐
+│     CONTROLES        │
+│  ─────────────────── │
+│  [MODE: MANUAL|AUTO] │  ← ModeToggle (habilitado solo en RESET)
+│  ─────────────────── │
+│       RESET          │  ← 100px altura
+│       PARO           │  ← 100px altura, ROJO
+│       INICIO         │  ← 100px altura, verde (solo AUTOMATIC)
+│  ─────────────────── │
+│  [ ] CONTINUO        │  ← solo AUTOMATIC
+│  [ ] DEBUG           │  ← solo MANUAL
+└─────────────────────┘
+```
+
+### Pestañas de Navegación
+
+| Pestaña | View | Descripción |
+|---------|------|-------------|
+| Depuracion por pasos | `manual_view` | Displays Paso Alambre/Pinza + botón PASO SIGUIENTE |
+| Servo | `servo_view` | Reservada (no implementada) |
+| Sensores | `sensors_view` | Sensores en vivo con LEDs y nombres |
+| Actuadores | `outputs_debug_view` | Forzado de salidas Y*/M* |
+| Depuracion | `debug_view` | Lectura/escritura directa de tags |
+| Configuracion | `settings_view` | Perfil PLC, IP/puerto, test conexión |
+
+---
+
+## 4. Flujo de datos (cómo funciona)
 
 ```
 [Vista Qt] --señal (tag, valor)-->  worker.enqueue_write(tag, valor)
@@ -54,10 +98,10 @@ Auto/Manual** (`SEL(S_MANUAL, Auto_*, CMD_*)`) para forzar salidas desde el HMI.
                                           v
 [ModbusWorker polling]  ---------->  adapter.read_all_inputs()  (batch)
                                           |
-                    data_ready(dict) <----+  dict[tag] = valor
+                    data_ready(dict) <-----+  dict[tag] = valor
                                           |
                                           v
-                MainWindow._on_data(data) -->  cada view.update_data(data)
+              MainWindow._on_data(data) -->  cada view.update_data(data)
 ```
 
 - **Consulta de datos**: el worker emite `data_ready(data)` en cada poll; cada
@@ -69,7 +113,48 @@ Auto/Manual** (`SEL(S_MANUAL, Auto_*, CMD_*)`) para forzar salidas desde el HMI.
 
 ---
 
-## 4. Cómo añadir un NUEVO tag / salida / sensor
+## 5. Coils de Control (Modos)
+
+| Tag | Address | Descripción |
+|-----|---------|-------------|
+| `MODE_AUTO` | 4 | Activar modo automático |
+| `MODE_MANUAL` | 5 | Activar modo manual |
+| `MODE_STEP` | 6 | Modo paso a paso |
+| `MODE_DEBUG` | 7 | Flag de debug |
+| `S4_CONTINUOUS` | coil | Ciclo continuo |
+| `CMD_PAUSE` | coil | Reset/Pause |
+| `CMD_START` | coil | Inicio de ciclo |
+| `CMD_CYCLE_STOP` | coil | Paro de ciclo |
+| `BTN_STEP` | coil | Botón paso siguiente |
+
+### Lógica del ModeToggle
+
+- **Solo habilitable** cuando `Paso_Alambre == 0` y `Paso_Pinza == 0` (estado RESET)
+- **AUTOMATIC**: muestra INICIO y CONTINUO, oculta DEBUG
+- **MANUAL**: oculta INICIO y CONTINUO, muestra DEBUG
+- **DEBUG** deshabilitado si CONTINUO está activo
+
+---
+
+## 6. Alarmas
+
+### AlarmBar
+
+- Visible solo cuando hay alarmas activas
+- Botón "Limpiar" borra visualmente las alarmas (reaparecen si condición física sigue activa)
+- Formato: `⚠ Nombre Alarma HH:MM:SS`
+- Timestamp actualizado cada vez que la alarma aparece
+
+### Alarmas Configuradas
+
+| Sensor | Tag | Descripción |
+|--------|-----|-------------|
+| H3 | `H3` (discrete_input, addr 1200) | Falta Nylon Alarma |
+| H8 | `H8` (discrete_input, addr 1201) | Alarma Presion Baja |
+
+---
+
+## 7. Cómo añadir un NUEVO tag / salida / sensor
 
 Ejemplo: añadir la salida física `Y25` (cachador atrás) o un sensor nuevo.
 Hay que tocar archivos en este orden:
@@ -84,9 +169,8 @@ Hay que tocar archivos en este orden:
 2. **Si es salida física forzable manualmente**: añade también su memoria de
    forzado, p. ej. `"CMD_Y25": { "type": "coil", "address": <libre>, "description": "Forzado manual Y25" }`.
 
-3. **Si debe verse en una pestaña**: añade la entrada a la lista correspondiente
-   de la vista, p. ej. `DEBUG_OUTPUTS` en `hmi/ui/views/outputs_debug_view.py`
-   (formato `("CMD_Yx", "Yx Etiqueta")`) o `MANUAL_OUTPUTS` en `manual_view.py`.
+3. **Si debe verse en Actuadores**: añade la entrada a `DEBUG_OUTPUTS` en
+   `hmi/ui/views/outputs_debug_view.py` (formato `("CMD_Yx", "Yx Etiqueta")`).
 
 4. **Documenta**: añade la fila en `docs/modbus_generic_map.md` (tabla de salidas
    o sensores).
@@ -101,25 +185,28 @@ Hay que tocar archivos en este orden:
 
 ---
 
-## 5. Cómo añadir una NUEVA pestaña / vista
+## 8. Cómo añadir una NUEVA pestaña / vista
 
-Pasos exactos (modelo: `outputs_debug_view.py`, la última vista añadida):
+Pasos exactos (modelo: `outputs_debug_view.py`):
 
 1. Crea `hmi/ui/views/<nombre>_view.py` con una clase `QWidget` de estilo
    consistente (usa `SectionFrame`, `ValveToggle`, `StatusLED` de `widgets.py`).
    - Define señales propias para acciones del usuario (p. ej. `Signal(str, bool)`).
    - Implementa `update_data(self, data: dict)`.
+
 2. En `hmi/ui/main_window.py`:
    - Importa la clase nueva.
-   - Instánciala (`self._mi_view = MiView()`) donde están las demás vistas.
-   - Añádela: `self._tabs.addTab(self._mi_view, "Nombre Pestaña")`.
-   - Conecta sus señales de escritura al worker.
+   - Añádela a `TAB_NAMES` si quieres que aparezca en el sidebar.
+   - Instánciala (`self._mi_view = MiView()`) y añádela al stacked:
+     `self._stacked.addWidget(self._mi_view)`.
+   - Conecta sus señales de escritura al worker en `_connect_signals`.
    - Llama `self._mi_view.update_data(data)` dentro de `_on_data`.
-3. Actualiza la tabla de pestañas en `README.md` si quieres.
+
+3. Actualiza la tabla de pestañas en `README.md` y `VCG.md`.
 
 ---
 
-## 6. Convenciones importantes
+## 9. Convenciones importantes
 
 - **Nombres simbólicos, nunca direcciones hardcodeadas.**
 - Salidas se fuerzan escribiendo coils `CMD_*`; el PLC combina con
@@ -137,7 +224,7 @@ Pasos exactos (modelo: `outputs_debug_view.py`, la última vista añadida):
 
 ---
 
-## 7. Comandos útiles
+## 10. Comandos útiles
 
 ```bash
 # Probar el adapter (levantar simulador interno + validar R/W)
@@ -159,7 +246,7 @@ Pasos exactos (modelo: `outputs_debug_view.py`, la última vista añadida):
 
 ---
 
-## 8. Gotchas / qué evitar
+## 11. Gotchas / qué evitar
 
 - No tocar `config/app_config.json` sin backup, ni commitearlo con IP del simulador.
 - No hardcodear direcciones Modbus en el HMI; todo debe pasar por el perfil JSON.
@@ -167,3 +254,5 @@ Pasos exactos (modelo: `outputs_debug_view.py`, la última vista añadida):
 - No edites `hmi/comms/plc_adapter.py` salvo que cambies el protocolo de comunicación.
 - Al añadir tags, verifica que las direcciones no colisionen con las existentes.
 - El simulador reporta avisos de deprecación de pymodbus en el log: son inofensivos.
+- `ValveToggle.setEnabled(False)` no propaga a hijos automáticamente; el widget
+  `ValveToggle` tiene su propio `setEnabled` que reimplementa la funcionalidad.

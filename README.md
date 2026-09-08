@@ -20,9 +20,11 @@ Auto/Manual para forzar salidas desde el HMI.
   Perfil actual: `generic_kinco` (Kinco K5s / **K615S 16DT**).
 - **Comunicación Modbus TCP** con polling configurable (100 ms por defecto),
   reconexión automática y worker en hilo (`QThread`).
-- **6 pestañas de operación** (ver [Interfaz](#interfaz-hmi)).
+- **5 pestañas de operación** (ver [Interfaz](#interfaz-hmi)).
 - **Fuerza manual individual** de cada salida física (~19 salidas) con panel de
   sensores en vivo para depuración.
+- **Alarmas dinámicas** con timestamp en barra superior central.
+- **Selector de modo** MANUAL/AUTOMATIC en panel de controles.
 - **Rutina ST** de la máquina real portada y corregida en `plc/generic_main.st`.
 - Tema oscuro industrial, pantalla completa 1920×1080.
 
@@ -33,11 +35,13 @@ Auto/Manual para forzar salidas desde el HMI.
 ```
 ┌────────────────────────────  HMI (Python/Qt)  ────────────────────────────┐
 │  hmi/main.py        → entrada, carga config, arranca QApplication          │
-│  hmi/ui/main_window.py → ventana principal + pestañas                      │
-│  hmi/ui/views/*     → AutoView, ManualView, ServoView, OutputsDebugView,   │
-│                       DebugView, SettingsView                              │
+│  hmi/ui/main_window.py → ventana principal + AlarmBar + pestañas            │
+│  hmi/ui/views/*     → ManualView, ServoView, OutputsDebugView,             │
+│                       SensorsView, DebugView, SettingsView                   │
+│  hmi/ui/widgets.py  → ModeToggle, ValveToggle, IndustrialButton,            │
+│                       ServoPositionDisplay, AlarmCard, SimpleLED             │
 │  hmi/comms/plc_adapter.py → capa Modbus TCP + PLCProfile (lee perfil JSON) │
-│  hmi/comms/modbus_worker.py → hilo de polling y cola de lecturas/escritas  │
+│  hmi/comms/modbus_worker.py → hilo de polling y cola de lecturas/escritas   │
 └────────────────────────────────────────────────────────────────────────────┘
                                   │  Modbus TCP
 ┌─────────────────────────────────▼──────────────────────────────────────────┐
@@ -110,21 +114,60 @@ salidas (Y14, Y24, M1).
 
 ## Interfaz HMI
 
-| Pestaña          | Descripción                                                                 |
-|------------------|-----------------------------------------------------------------------------|
-| **Producción**   | Control del ciclo automático (Start, Cycle Stop, Pause, E-Stop).             |
-| **Manual / Paso**| Forzado manual de salidas y avance paso a paso (pulso `BTN_STEP`).           |
-| **Servo**        | Control de velocidad, posición y modo Jog del servomotor (reservado).        |
-| **Depar. Salidas**| Forzado individual de cada salida (una a una) + sensores en vivo (S8–S23).  |
-| **Depuración**   | Lectura/escritura directa de cualquier tag + log de operaciones.             |
-| **Configuración**| Selección de perfil de PLC, IP/puerto y test de conexión.                    |
+### Layout Principal
 
-### Depuración de salidas
+```
+┌────────────────────────────────────────────────────────┐
+│ SIDEBAR │            ALARM BAR (cuando hay alarmas)    │ CONTROLS │
+│  (NAV)  │──────────────────────────────────────────────│  PANEL   │
+│         │                                               │          │
+│         │              PESTANA ACTIVA                  │          │
+│         │              (MAIN CONTENT)                   │          │
+│         │                                               │          │
+└─────────┴───────────────────────────────────────────────┴──────────┘
+```
 
-La pestaña **Depar. Salidas** permite activar cada válvula/motor individualmente
-(CMD_Y*, CMD_M*) mientras se observa la reacción de los sensores en tiempo real,
-ideal para validar cableado y actuadores. Requiere que el PLC esté en **modo manual**
-(`S_MANUAL = ON`).
+### Pestañas de Navegación
+
+| Pestaña              | Descripción                                                                 |
+|----------------------|-----------------------------------------------------------------------------|
+| **Depuracion por pasos** | Displays de paso (Alambre/Pinza) + botón PASO SIGUIENTE                   |
+| **Servo**            | Control de velocidad, posición y modo Jog del servomotor (reservado).        |
+| **Sensores**         | Vista en vivo de todos los sensores con LEDs indicadores y nombres completos.|
+| **Actuadores**       | Forzado individual de cada salida (Y*/M*) + warning si no está en Manual.   |
+| **Depuracion**       | Lectura/escritura directa de cualquier tag + log de operaciones.             |
+| **Configuracion**    | Selección de perfil de PLC, IP/puerto y test de conexión.                    |
+
+### Panel de Controles (lado derecho)
+
+```
+┌─────────────────────┐
+│     CONTROLES        │
+│  ─────────────────── │
+│  [MODE: MANUAL|AUTO] │  ← Toggle selector de modo
+│  ─────────────────── │
+│       RESET          │  ← 100px altura, gris
+│       PARO           │  ← 100px altura, ROJO
+│       INICIO         │  ← 100px altura, verde (solo en AUTOMATIC)
+│  ─────────────────── │
+│  [ ] CONTINUO        │  ← solo en AUTOMATIC
+│  [ ] DEBUG           │  ← solo en MANUAL
+└─────────────────────┘
+```
+
+**Lógica del ModeToggle:**
+- Solo habilitable cuando la máquina está en RESET (`Paso_Alambre == 0` y `Paso_Pinza == 0`)
+- En modo AUTOMATIC: muestra INICIO y CONTINUO, oculta DEBUG
+- En modo MANUAL: muestra DEBUG, oculta INICIO y CONTINUO
+- DEBUG checkbox deshabilitado si CONTINUO está activo
+
+### AlarmBar (barra superior central)
+
+- **Visible**: solo cuando hay alarmas activas
+- **Oculta**: cuando no hay alarmas
+- **Botón "Limpiar"**: borra visualmente las alarmas (reaparecen si la condición física sigue activa)
+- **Formato**: `⚠ Nombre Alarma HH:MM:SS`
+- **Alarma configurable**: H3 (Falta Nylon), H8 (Presión Baja)
 
 ---
 
@@ -150,6 +193,22 @@ Perfiles incluidos:
 - `delta_dvp.json` — ejemplo Delta DVP.
 
 Selecciona el perfil activo en `config/app_config.json` o en la pestaña Configuración.
+
+---
+
+## Coils de Control (Modo)
+
+| Tag | Address | Descripción |
+|-----|---------|-------------|
+| `MODE_AUTO` | 4 | Activar modo automático |
+| `MODE_MANUAL` | 5 | Activar modo manual |
+| `MODE_STEP` | 6 | Modo paso a paso |
+| `MODE_DEBUG` | 7 | Flag de debug |
+| `S4_CONTINUOUS` | - | Ciclo continuo |
+| `CMD_PAUSE` | - | Reset/Pause |
+| `CMD_START` | - | Inicio de ciclo |
+| `CMD_CYCLE_STOP` | - | Paro de ciclo |
+| `BTN_STEP` | - | Botón paso siguiente |
 
 ---
 
@@ -182,3 +241,30 @@ Selecciona el perfil activo en `config/app_config.json` o en la pestaña Configu
 - El estado de la máquina se reporta al HMI en cada ciclo de polling.
 - Trabajar siempre en modo manual con las protecciones de la máquina activas
   al forzar salidas.
+- El toggle de modo (MANUAL/AUTOMATIC) solo está habilitado cuando la máquina
+  está en estado de RESET.
+
+---
+
+## Estado del Proyecto (Septiembre 2026)
+
+### Completado
+- [x] Interfaz HMI con tema oscuro industrial
+- [x] Comunicación Modbus TCP con polling
+- [x] Vista de Sensores con LEDs y nombres completos
+- [x] Vista de Actuadores con toggles para forzar salidas
+- [x] Vista Depuracion por pasos (Paso Alambre, Paso Pinza, botón PASO SIGUIENTE)
+- [x] AlarmBar dinámica con timestamps y botón limpiar
+- [x] ModeToggle MANUAL/AUTOMATIC con lógica de visibilidad
+- [x] Panel de controles con RESET, PARO (rojo), INICIO, CONTINUO, DEBUG
+- [x] Conexión desconexión visual en sidebar
+- [x] Perfil generic_kinco con mapeo completo de tags
+
+### En Progreso
+- [ ] Pruebas de integración con PLC físico
+- [ ] Ajuste fino de tiempos de polling
+
+### Pendiente
+- [ ] Vista Servo (reservada para future implementation)
+- [ ] Validación de seguridad E-Stop en HMI
+- [ ] Historial de alarmas (persistencia)

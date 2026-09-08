@@ -22,16 +22,19 @@ Las memorias `Auto_*` son calculadas por la logica ST del PLC.
 
 ## Entradas de control (Botonera / Selectores)
 
-| Nombre HMI (abstracto) | Nombre real (Kinco) | Tipo   | Descripcion                       |
-|------------------------|---------------------|--------|-----------------------------------|
-| CMD_START              | S5_START            | coil   | Boton Arranque                    |
-| CMD_CYCLE_STOP         | S3_STOP             | coil   | Boton Paro                        |
-| CMD_ESTOP              | S1_EMERGENCY_STOP   | coil   | Paro de emergencia (NC)           |
-| -                      | S4_CONTINUOUS       | coil   | Selector ciclo continuo           |
-| -                      | S2_SINGLE           | coil   | Selector ciclo unico              |
-| MODE_MANUAL            | S_MANUAL            | coil   | Selector modo manual              |
-| MODE_STEP              | S_STEP_BY_STEP      | coil   | Selector modo paso a paso         |
-| -                      | BTN_STEP            | coil   | Boton avance de paso              |
+| Nombre HMI | Tipo   | Direccion | Descripcion                       |
+|------------|--------|-----------|-----------------------------------|
+| CMD_START  | coil   | 0         | Boton Arranque                    |
+| CMD_PAUSE  | coil   | 1         | Reset/Pause                       |
+| CMD_CYCLE_STOP | coil | 2         | Boton Paro                        |
+| MODE_AUTO  | coil   | 4         | Selector modo automatico          |
+| MODE_MANUAL | coil  | 5         | Selector modo manual              |
+| MODE_STEP  | coil   | 6         | Selector modo paso a paso         |
+| MODE_DEBUG | coil   | 7         | Flag modo debug                   |
+| S4_CONTINUOUS | coil | -         | Selector ciclo continuo           |
+| BTN_STEP   | coil   | -         | Boton avance de paso              |
+
+> **Nota**: CMD_ESTOP (S1_EMERGENCY_STOP) es address 24 en discrete_inputs.
 
 ## Sensores (Discrete Inputs)
 
