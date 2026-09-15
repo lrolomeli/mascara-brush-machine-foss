@@ -6,6 +6,7 @@ QMainWindow con sidebar vertical izquierdo (navegacion) y derecho (controles).
 from __future__ import annotations
 
 import logging
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -155,6 +156,7 @@ class MainWindow(QMainWindow):
         self._worker = worker
         self._current_view = "auto"
         self._is_manual_mode = True
+        self._mode_hold_until = 0.0
         self.setWindowTitle("HMI Industrial - Maquina Ma1")
         self.setMinimumSize(1920, 1080)
         self._build_ui()
@@ -532,7 +534,7 @@ class MainWindow(QMainWindow):
             })
         self._alarm_bar.update_alarms(alarms)
 
-        if self._worker._adapter._connected:
+        if self._worker._adapter._connected and time.monotonic() >= self._mode_hold_until:
             is_manual_from_plc = data.get("MODE_MANUAL", False)
             if is_manual_from_plc != self._is_manual_mode:
                 self._is_manual_mode = is_manual_from_plc
@@ -582,6 +584,7 @@ class MainWindow(QMainWindow):
         self._worker.enqueue_write("BTN_STEP", False)
 
     def _on_mode_changed(self, mode: str) -> None:
+        self._mode_hold_until = time.monotonic() + 0.35
         if mode == "AUTOMATIC":
             self._worker.enqueue_write("MODE_AUTO", True)
             self._worker.enqueue_write("MODE_MANUAL", False)

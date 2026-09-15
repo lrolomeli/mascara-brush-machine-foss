@@ -139,20 +139,21 @@ class PLCAdapter(ABC):
 
     def read_tag(self, name: str) -> bool | int:
         tag = self._profile.get_tag(name)
-        if tag.is_coil:
-            result = self.read_coils([name])
-            return result.get(name, False)
-        else:
-            result = self.read_holding_registers([name]) if tag.modbus_type == "holding_register" \
-                else self.read_input_registers([name])
-            return result.get(name, 0)
+        if tag.modbus_type == "coil":
+            return self.read_coils([name]).get(name, False)
+        if tag.modbus_type == "discrete_input":
+            return self.read_discrete_inputs([name]).get(name, False)
+        if tag.modbus_type == "input_register":
+            return self.read_input_registers([name]).get(name, 0)
+        return self.read_holding_registers([name]).get(name, 0)
 
     def write_tag(self, name: str, value: bool | int) -> bool:
         tag = self._profile.get_tag(name)
-        if tag.is_coil:
+        if tag.modbus_type == "coil":
             return self.write_coil(name, bool(value))
-        else:
-            return self.write_register(name, int(value))
+        if tag.modbus_type not in ("holding_register", "input_register"):
+            return False
+        return self.write_register(name, int(value))
 
     def read_all_inputs(self) -> dict[str, bool | int]:
         """Lee todos los inputs del PLC en un solo ciclo (optimizado)."""

@@ -171,7 +171,12 @@
         "S23": {
             "type": "discrete_input",
             "address": 23,
-            "description": "Sensor presion neumatica"
+            "description": "Sensor presion neumatica I0.3"
+        },
+        "S1_EMERGENCY_STOP": {
+            "type": "discrete_input",
+            "address": 24,
+            "description": "Paro emergencia I0.2 (NC)"
         },
         "CMD_Y1": {
             "type": "coil",
@@ -414,12 +419,12 @@
             "description": "Salida fisica M3 aspirado"
         },
         "H8": {
-            "type": "coil",
+            "type": "discrete_input",
             "address": 1200,
             "description": "Alarma baja presion (H8 := NOT S23)"
         },
         "H3": {
-            "type": "coil",
+            "type": "discrete_input",
             "address": 1201,
             "description": "Alarma nylon/cerda (H3 := S8)"
         },

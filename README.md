@@ -91,14 +91,19 @@ python3 -m venv .venv
 
 ### 1. Simulador (sin PLC físico)
 
-Para probar el HMI sin PLC, inicia un servidor Modbus simulado con datos de demo:
+El simulador (`tests/run_simulator.py`) ejecuta la **rutina del PLC** y la
+**planta física** en Modbus TCP, lo que permite probar el HMI completo — ciclo
+AUTO, paso a paso y forzado manual — sin PLC físico. Documentación completa:
+[`docs/simulador.md`](docs/simulador.md).
 
 ```bash
 ./run_simulator.sh 0.0.0.0 5020 generic_kinco
 ```
 
-El simulador responde con sensores de demo activos (S8, S14, S15, S23) y algunas
-salidas (Y14, Y24, M1).
+El ciclo completo tarda ~14 segundos. Al arrancar, el simulador presenta
+sensores de reposo (S8, S14, S15, S19, S23 y otros), E-Stop libre, y está
+listo para recibir INICIO desde el HMI. Comandos de la terminal del
+simulador: `e` (E-Stop), `h3`/`h8` (toggle alarmas), `s` (estado), `q` (salir).
 
 ### 2. HMI
 

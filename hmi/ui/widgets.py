@@ -261,7 +261,9 @@ class ModeToggle(QWidget):
         if mode == self._current_mode:
             return
         self._current_mode = mode
+        self._btn.blockSignals(True)
         self._btn.setChecked(mode == "MANUAL")
+        self._btn.blockSignals(False)
         self._apply_style()
 
     def current_mode(self) -> str:
@@ -270,7 +272,9 @@ class ModeToggle(QWidget):
     def setEnabled(self, enabled: bool) -> None:
         super().setEnabled(enabled)
         self._btn.setEnabled(enabled)
-        if not enabled:
+        if enabled:
+            self._apply_style()
+        else:
             self._btn.setStyleSheet("""
                 QPushButton {
                     background-color: transparent;
@@ -345,7 +349,9 @@ class ValveToggle(QWidget):
 
     def set_state(self, active: bool) -> None:
         self._active = active
+        self._btn.blockSignals(True)
         self._btn.setChecked(active)
+        self._btn.blockSignals(False)
         self._btn.setText("ON" if active else "OFF")
 
     def setEnabled(self, enabled: bool) -> None:

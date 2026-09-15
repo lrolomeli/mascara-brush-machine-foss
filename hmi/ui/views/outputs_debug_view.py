@@ -6,6 +6,8 @@ Requiere modo MANUAL para funcionar.
 
 from __future__ import annotations
 
+import time
+
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
@@ -50,6 +52,7 @@ class OutputsDebugView(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._toggle_widgets: dict[str, ValveToggle] = {}
+        self._hold_until = 0.0
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -98,6 +101,7 @@ class OutputsDebugView(QWidget):
 
     def _on_toggled(self, index: int, state: bool) -> None:
         tag = DEBUG_OUTPUTS[index - 1][0]
+        self._hold_until = time.monotonic() + 0.35
         self.output_command.emit(tag, state)
 
     def _set_toggles_enabled(self, enabled: bool) -> None:
@@ -115,6 +119,9 @@ class OutputsDebugView(QWidget):
     def update_data(self, data: dict) -> None:
         is_manual = data.get("MODE_MANUAL", False)
         self.set_mode(is_manual)
+
+        if time.monotonic() < self._hold_until:
+            return
 
         for tag, _ in DEBUG_OUTPUTS:
             v = data.get(tag)

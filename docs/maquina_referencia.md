@@ -180,205 +180,112 @@ Y1, Y3, Y5, Y6, Y7, Y8, Y10, Y11, Y12, Y14, Y15, Y16, Y17, Y18, Y24, M1, M2
 
 ## 5. Correspondencia Actuador → Sensor(es) → Timer (simulación)
 
-Documentación completa para el simulador (`tests/run_simulator.py`). Describe el
-comportamiento físico de cada actuador, sus sensores de posición y timers.
+Documentación del simulador (`tests/run_simulator.py`). El simulador ejecuta la
+**rutina del PLC** (`plc/generic_main.st`, ver Sección 2) sobre una **planta
+física** modelada: cada actuador tiene posiciones (fwd/home) y sensores por
+posición, con tiempos de carrera (`TRAVEL`). Los sensores que gobierna un
+actuador aparecen en ambas posiciones; el valor de la posición contraria se
+aplica al cambiar de posición.
 
-### 5.1 Posición Inicial y Sensores
+### 5.1 Sensores por Posición
 
-Cada actuador tiene una posición inicial (reposo). En esta posición, un sensor
-puede estar ACTIVO (ON). Cuando el actuador opera, el sensor se DESACTIVA y un
-timer comienza a correr. Cuando el timer termina, el actuador REGRESA a su
-posición inicial y el sensor se reactiva.
+| Actuador | Fwd (ON)                | Home (OFF)                    | Notas |
+|----------|-------------------------|-------------------------------|-------|
+| Y1  | S9                      | —                             | orientador |
+| Y5  | S15                     | —                             | comparte S15 con Y11 |
+| Y6  | — (S11 OFF)             | S11                           | rasurado: baja y regresa |
+| Y7  | S12, S13 OFF            | S13                           | tijera: S12 arriba / S13 cepillado cortado |
+| Y8  | —                       | —                             | sin sensor (timer) |
+| Y10 | —                       | —                             | sin sensor (timer) |
+| Y11 | S15 OFF                 | S15                           | púa pinza |
+| Y12 | S17                     | —                             | pinza adelante (`S17` se activa en fwd) |
+| Y14 | —                       | —                             | sin sensor (timer) |
+| Y15 | S18, S21, S19 OFF       | S19                           | pasa previa |
+| Y16 | S20                     | —                             | lengüeta (fwd rápido) |
+| Y17 | —                       | —                             | sin sensor (timer) |
+| Y18 | S22                     | —                             | pelador |
+| Y24 | —                       | —                             | catcher (timer) |
+| M1/M2/M3 | —                   | —                             | motores (sin sensor) |
 
-**Excepción:** Y9 tiene 3 posiciones con sensor en cada una (no regresa
-automáticamente, depende de la secuencia).
+> **Corrección de polaridad vs. doc antiguo:** `Y12` activa `S17` en fwd (no es
+> "S17 en posición inicial"), `Y15` tiene `S18/S21` en fwd y `S19` en home (no
+> al revés), y `Y7` además gobierna `S13` en su posición home.
 
-| Actuador | Posición Inicial | Sensor Pos. Inicial | Sensor Pos. Final | Sensor Intermedio | Timer (s) | Regresa? |
-|----------|-----------------|--------------------|--------------------|-------------------|-----------|----------|
-| Y1  | Retraído | — | S9 | — | 1.0 | No |
-| Y6  | Arriba | S11 | — | — | 2.5 | **Sí** |
-| Y7  | Abajo | — | S12 | — | 2.0 | **Sí** |
-| Y8  | NC (muelle) | — | — | — | 0.5 | Automático |
-| Y9  | Abajo | S14 | S16 | S10 | 0.5 | No (3 pos) |
-| Y10 | — | — | — | — | 0.5 | No |
-| Y11 | Retraído | S15 | — | — | 1.0 | **Sí** |
-| Y12 | Adentro | S17 | — | — | 1.0 | **Sí** |
-| Y14 | — | — | — | — | 0.5 | No |
-| Y15 | Retraído | S18, S21 | S19 | — | 2.5 | **Sí** |
-| Y16 | Retraído | — | S20 | — | 1.5 | **Sí** |
-| Y17 | Retraído | — | — | — | 0.3 | **Sí** |
-| Y18 | Retraído | — | S22 | — | 1.0 | **Sí** |
-| Y24 | — | — | — | — | 1.5 | No |
-| Y25 | — | — | — | — | 1.5 | No |
-| M1  | OFF | — | — | — | 2.0 | No |
-| M2  | OFF | — | — | — | 3.0 | No |
-| M3  | **ON** | — | — | — | — | Siempre ON |
+### 5.2 Lógica de Y9 (3 Posiciones)
 
-### 5.2 Comportamiento Detallado por Actuador
-
-#### Y1 — Orientador
-- **Sin sensor de posición inicial**
-- Al activarse: va a posición final (extendido)
-- Timer corre (1.0s)
-- Timer termina: **NO regresa** (se queda extendido)
-- Sensor final S9 se activa cuando está en posición final
-
-#### Y6 — Cabezal Rasurado
-- **Sensor S11 en posición inicial (arriba)**
-- Al activarse: baja, S11 se DESACTIVA
-- Timer corre (2.5s)
-- Timer termina: **REGRESA arriba**, S11 se reactiva
-
-#### Y7 — Tijera Arriba/Abajo
-- **Sensor S12 en posición final (arriba)**
-- Al activarse: sube
-- Sensor S12 se activa cuando llega arriba
-- Timer corre (2.0s)
-- Timer termina: **REGRESA abajo**
-
-#### Y8 — Abre/Cierra Tijera (Normally Closed)
-- **Sin sensor**
-- Es NC con retorno por muelle
-- Al activarse: acciona (0.5s)
-- Timer termina: **regresa por muelle automáticamente**
-
-#### Y9 — Sube/Baja Pinza (3 Posiciones)
-- **3 sensores: S14 (abajo), S10 (intermedio), S16 (arriba)**
-- Posición inicial: S14=ON (abajo)
+Y9 controla el cilindro múltiple de la pinza con sensor en cada posición:
 
 | Acción | Tiempo | Sensores Activos |
 |--------|--------|------------------|
 | Y9=ON (subiendo) | 0.0s | S14=OFF, S10=OFF, S16=OFF |
-| | 0.5s | S14=OFF, S10=ON, S16=OFF (intermedio) |
-| | 1.0s | S14=OFF, S10=OFF, S16=ON (arriba) |
+| | 0.5s | S10=ON, S16=OFF (intermedio) |
+| | 1.0s | S10=OFF, S16=ON (arriba) |
 | Y9=OFF (bajando) | 0.0s | S16=OFF |
-| | deteka S10 | S10=ON momentáneamente |
-| | llega abajo | S14=ON (regresa a posición inicial) |
+| | 2.2s | S10=ON (intermedio, después de T_2T4) |
+| | 2.8s | S10=OFF, S14=ON (abajo = home) |
 
 - **S10 es solo lectura** — no activa nada directamente, pero la secuencia
-  de la máquina lo usa como condición para avanzar (Paso_Pinza 30→40)
+  de la máquina lo usa como condición para avanzar (Paso_Pinza 30→40).
+- La bajada pasa por S10 **después** de `T_2T4` (2.0s) para respetar el
+  apagado de `M1` en el ST.
 
-#### Y10 — Abre/Cierra Pinza
-- **Sin sensor**
-- Al activarse: acciona
-- Timer corre (0.5s)
-- Timer termina: **NO regresa** (se queda en la posición)
+### 5.3 Tiempos (PT reales del ST y carreras de planta)
 
-#### Y11 — Centrar Pinza
-- **Sensor S15 en posición inicial (retraído)**
-- Al activarse: extiende, S15 se DESACTIVA
-- Timer corre (1.0s)
-- Timer termina: **REGRESA a retraído**, S15 se reactiva
+TON de la rutina (PT reales de `generic_main.st`; ver Sección 2 del simulador):
 
-#### Y12 — Meter/Sacar Pinza
-- **Sensor S17 en posición inicial (adentro)**
-- Al activarse: sale, S17 se DESACTIVA
-- Timer corre (1.0s)
-- Timer termina: **REGRESA adentro**, S17 se reactiva
+| Timer | PT    | Condición IN          | Usado en     |
+|-------|-------|-----------------------|--------------|
+| T_2T5 | 2.5 s | Paso_Alambre = 10     | Pinza 0→10   |
+| T_1T3 | 1.5 s | Paso_Pinza = 10       | Pinza 10→20  |
+| T_2T4 | 2.0 s | Paso_Pinza = 30       | apaga M1     |
+| T_1T1 | 3.0 s | Paso_Pinza = 40       | Pinza 40→50  |
+| T_1T5 | 1.5 s | Paso_Alambre = 70     | Alambre 70→80 |
+| T_2T7 | 2.0 s | Paso_Pinza = 70*      | Pinza 70→80  |
+| T_2T6 | 1.5 s | Paso_Pinza = 80       | Pinza 80→90  |
 
-#### Y14 — Rasurado
-- **Sin sensor**
-- Al activarse: acciona
-- Timer corre (0.5s)
-- Timer termina: **NO regresa**
+\* Desviación del simulador: el ST gatea `T_2T7` con `Paso_Pinza = 60` pero lo
+consume en el 70; al salir de 60 el TON se reinicia y `Q` queda FALSO (cuelga).
+En el simulador se gatea en el paso que lo espera (70).
 
-#### Y15 — Dobladora + Peine
-- **Sensores S18 y S21 en posición inicial (retraído)**
-- Al activarse: extiende hacia S19
-- S18 y S21 se DESACTIVAN
-- Timer corre (2.5s)
-- Timer termina: **REGRESA a retraído**, S18 y S21 se reactivan
+Carreras de planta (`TRAVEL` en `tests/run_simulator.py`): Y1/Y5/Y6/Y7/Y8/Y10/
+Y12/Y14/Y17/Y24 = 0.4s, Y11 = 0.3s, Y16 = 0.1s, Y18 = 0.2s, y
+`Y15 = {"fwd": 2.6, "home": 0.3}`. Y9: 0.5/1.0 (subida), 2.2/2.8 (bajada).
 
-#### Y16 — Mecanismo Lengüeta
-- **Sensor S20 en posición final (extendido)**
-- Al activarse: extiende
-- Sensor S20 se activa cuando llega
-- Timer corre (1.5s)
-- Timer termina: **REGRESA a retraído**
+El ciclo completo dura aproximadamente **14 segundos**.
 
-#### Y17 — Cizalla Alambre
-- **Sin sensor**
-- Al activarse: cizalla (corte rápido)
-- Timer corre (0.3s)
-- Timer termina: **REGRESA a posición inicial**
+### 5.4 Alarmas y Paro de Emergencia
 
-#### Y18 — Empujar Alambre
-- **Sensor S22 en posición final (extendido)**
-- Al activarse: empuja hacia adelante
-- Sensor S22 se activa cuando llega
-- Timer corre (1.0s)
-- Timer termina: **REGRESA a retraído**
-
-#### Y24 — Chucks/Cachador
-- **Sin sensor**
-- Al activarse: acciona
-- Timer corre (1.5s)
-- Timer termina: **NO regresa**
-
-#### Y25 — Cachador Atrás
-- **Sin sensor**
-- Al activarse: acciona
-- Timer corre (1.5s)
-- Timer termina: **NO regresa**
-
-#### M1 — Motor Giro (Retorcido)
-- **Sin sensor**
-- Al activarse: gira
-- Timer corre (2.0s)
-- Timer termina: **PARA** (no regresa a posición, simplemente se apaga)
-
-#### M2 — Motor Rasurado
-- **Sin sensor**
-- Al activarse: gira
-- Timer corre (3.0s)
-- Timer termina: **PARA**
-
-#### M3 — Motor Aspirado
-- **Siempre ON** — no tiene timer, funciona mientras la máquina está activa
-
-### 5.3 Tiempos de Timer (estimados para ciclo de ~6s)
-
-| Timer | Duración (s) | Ubicación en Rutina |
-|-------|---------------|---------------------|
-| T_2T5 | 0.3 | Inicio orientación (Y15, Y14, Y9) |
-| T_1T3 | 0.4 | Cierre chucks (Y3) |
-| T_2T4 | 0.3 | Giro motor M1 |
-| T_1T1 | 0.8 | Rasurado (M2, Y6) |
-| T_1T5 | 0.3 | Posicionamiento final |
-| T_2T7 | 0.4 | Tijera sube (Y7) |
-| T_2T6 | 0.3 | Cierre tijera (Y8) |
-| **Total** | **~2.8s** | |
-
-El resto del ciclo (~3s) depende de sensores de FC.
-
-### 5.4 Alarmas Configurables por el Simulador
-
-| Alarma | Tag Modbus | Condición Física | Control |
-|--------|------------|------------------|---------|
-| Baja presión | H8 | `NOT S23` | Toggleable |
-| Falta nylon | H3 | `S8` | Toggleable |
+| Alarma | Tag Modbus | Condición Física | Control en el simulador |
+|--------|------------|------------------|-------------------------|
+| Baja presión | H8 | `NOT S23` | `h8` (default AUTO) |
+| Falta nylon | H3 | `S8` | `h3` (default AUTO) |
+| E-Stop | S1 | NC físico | `e` (default libre/ON) |
 
 ### 5.5 Estados Iniciales de Sensores (al arrancar el simulador)
 
 | Sensor | Valor | Descripción |
 |--------|-------|-------------|
 | S8  | ON  | Sensor de cerda/nylon |
-| S14 | ON  | Pinza abajo (home) |
-| S15 | ON  | Pinza retraída (home) |
+| S14 | ON  | Pinza abajo (home, Y9 en 0) |
+| S15 | ON  | Pinza retraída (home, Y11) |
+| S13 | ON  | Tijera abajo / cepillado cortado (home, Y7) |
+| S11 | ON  | Rasurado arriba (home, Y6) |
+| S19 | ON  | Pasa previa retraída (home, Y15) |
 | S23 | ON  | Presencia de presión neumática |
+| discreta 24 | ON | E-Stop libre (NC) |
+| S16, S17, S20, S22, S9, S12 | OFF | actuadores en reposo |
 
 ### 5.6 Notas de Implementación para el Simulador
 
-El simulador usa `SimDevice` de pymodbus con un `action callback` que intercepta
-todas las lecturas Modbus. Cuando el HMI lee discrete inputs, el callback
-consulta el estado actual de `_discrete_inputs` en `SimulatedPLC` y modifica
-los registros antes de devolver la respuesta.
+- El simulador usa `SimDevice` de pymodbus con un `action callback` que
+  intercepta las lecturas **y escrituras** Modbus. Las escrituras de la HMI se
+  guardan en `_coil_written`/`_reg_written` (botones, modos y forzado manual);
+  los botones `CMD_START`/`CMD_CYCLE_STOP`/`BTN_STEP` se consumen como pulsos.
+- Salidas físicas = coils `Y*`/`M*`. El multiplexor es
+  `Yn := SEL(S_MANUAL, Auto_Yn, CMD_Yn)`.
+- `M3`: en AUTO el ST no lo enciende (OFF); en manual se fuerza con `CMD_M3`.
+- Al terminar el ciclo de alambre (paso 80) el simulador retrae `Y9` para que
+  `S14` vuelva y el reinicio no se cuelgue (el ST no lo explicita).
 
-Para cambiar un sensor dinámicamente:
-```python
-# Ejemplo: poner S14 = True
-bit_pos = 14 - start_address
-reg_idx = bit_pos // 16
-bit_idx = bit_pos % 16
-current_registers[reg_idx] |= (1 << bit_idx)
-```
+Para cambiar un sensor dinámicamente desde el HMI se escribe el `CMD_*` del
+actuador correspondiente en modo manual (pestaña "Depar. Salidas").
