@@ -1,0 +1,2 @@
+# Mantener CRLF en el working tree para archivos IL de KincoBuilder (Windows)
+*.il text eol=crlf
