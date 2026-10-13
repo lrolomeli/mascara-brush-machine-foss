@@ -39,6 +39,13 @@ Auto/Manual** (`SEL(S_MANUAL, Auto_*, CMD_*)`) para forzar salidas desde el HMI.
 | `plc/generic_main.st` | Rutina ST de producción (2 ramas + mux Auto/Manual + alarmas). |
 | `tests/run_simulator.py` + `run_simulator.sh` | Simulador Modbus TCP con datos de demo (para probar sin PLC físico). |
 | `tests/test_adapter.py` | Test de escritura/lectura del adapter contra un simulador interno. |
+| `plc/test_io.il` | Programa PLC **minimo de prueba** (HMI<->PLC<->I/O fisica). CRLF. |
+| `plc/test_servo.il` | Programa PLC de **servo** (pulsos/dir/enable, AXIS 0). CRLF. |
+| `tests/test_io_hardware.py` | Prueba contra PLC fisico: `--hmi-to-plc`, `--plc-to-hmi`, `--scan`. |
+| `tests/test_servo_hardware.py` | Prueba de servo + descubrimiento M/V (`--scan`, `--enable`, `--move`, `--jog`). |
+| `hmi/ui/views/servo_test_view.py` | Pestana **"Test Servo"** (comandos %M + parametros %V). |
+| `config/plc_profiles/test_kinco.json` | Perfil minimo **solo para pruebas fisicas** (no produccion). |
+| `docs/pruebas_plc_fisico.md` | Guia paso a paso de pruebas con el K615S-16DT. |
 | `docs/modbus_generic_map.md` | **Mapa completo** de nombres simbólicos ↔ direcciones Modbus + secuencia. |
 | `docs/maquina_referencia.md` | Referencia de diseño/depuración: I/O real, tablas de pasos, forzado manual. |
 | `docs/requirements.md` | Requisitos de hardware y modos de operación. |

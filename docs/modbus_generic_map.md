@@ -34,7 +34,10 @@ Las memorias `Auto_*` son calculadas por la logica ST del PLC.
 | S4_CONTINUOUS | coil | -         | Selector ciclo continuo           |
 | BTN_STEP   | coil   | -         | Boton avance de paso              |
 
-> **Nota**: CMD_ESTOP (S1_EMERGENCY_STOP) es address 24 en discrete_inputs.
+> **Nota E-stop**: el IL usa **`%M0.3`** como condicion de emergencia (`0` = activa).
+> En Modbus eso es el **coil 3** (`CMD_ESTOP`). El paro fisico es `%I0.2`
+> (`S1_EMERGENCY_STOP`, discrete input 24) y **aun no se espeja** a `%M0.3`
+> (pendiente de hardware, ver `docs/pendientes.md`).
 
 ## Sensores (Discrete Inputs)
 
@@ -109,16 +112,20 @@ El HMI escribe a estas memorias para forzar salidas en modo manual.
 
 ## Registros de estado (Holding/Input)
 
-| Tag          | Tipo            | Descripcion            |
-|--------------|-----------------|------------------------|
+| Tag          | Tipo            | Direccion | Descripcion            |
+|--------------|-----------------|-----------|------------------------|
 | Paso_Alambre | holding reg 400 | Estado rama alambre    |
-| Paso_Pinza   | holding reg 401 | Estado rama pinza      |
-| MACHINE_STATE| holding reg 402 | Estado de maquina (HMI)|
+| Paso_Pinza   | holding reg 402 | Estado rama pinza (`%VW402`) |
+| MACHINE_STATE| holding reg 404 | Estado de maquina (HMI)|
 | SERVO_SPEED  | holding reg 410 | Velocidad servo (reservado) |
 | SERVO_POS_TARGET | holding 411 | Posicion target (reservado) |
 | SERVO_POS_ACTUAL  | input reg 400 | Posicion actual (reservado) |
 | SERVO_ACTUAL_SPEED| input reg 401 | Velocidad actual (reservado)|
 | SERVO_TORQUE      | input reg 402 | Torque actual (reservado)  |
+
+> **Registros pares**: Kinco no admite `%VW` impares (`Error 041`); por eso
+> `Paso_Pinza` esta en `%VW402` (no 401) y `MACHINE_STATE` se desplazo a 404.
+> `STEP_NUMBER` es un alias de `Paso_Pinza` (misma direccion 402).
 
 ## Secuencia de la maquina (2 ramas paralelas)
 
@@ -128,3 +135,21 @@ El HMI escribe a estas memorias para forzar salidas en modo manual.
    `S16` (pinza arriba) y `S20` (lengueta) esten activos.
 4. **Fin de ciclo**: `Paso_Pinza=90` cierra el ciclo con `S13` (cepillado
    cortado).
+
+## Mapa de memoria del IL (fuente de verdad)
+
+El programa `plc/generic_main.il` es la referencia; el perfil JSON y este
+documento se alinean a el. Resumen del mapa propuesto en el propio IL:
+
+| Grupo | Direccion IL | Modbus | Notas |
+|-------|--------------|--------|-------|
+| Botonera | `S5_START=%M0.0`, `S3_STOP=%M0.1`, `S1_EMERGENCY_STOP=%M0.3`, `S_MANUAL=%M0.5`, `S_STEP_BY_STEP=%M0.6` | coils 0,1,3,5,6 | E-stop en `%M0.3` |
+| `BTN_STEP` | `%M2.4` | coil 20 | flanco en `%M60.0/%M60.1` |
+| Sensores | `S8..S15=%M30.0..%M30.7`, `S16..S23=%M31.0..%M31.7` | discrete 8..23 | espejo de `%I1.0..%I2.7` |
+| Forzado manual | `CMD_Y*=%M12.x..%M15.x`, `CMD_M*=%M25.x` | coils 100..202 | |
+| Salidas deseadas | `%M50.0..%M52.4` | — | multiplexor Auto/Manual |
+| Salidas fisicas | `Y1=%Q0.0` ... `H3=%Q2.4` | coils 1000+ | **verificar base `%Q`->coil en KincoBuilder** |
+
+> **Pendiente de confirmar**: la correspondencia de `%Q` con coils Modbus
+> (el perfil usa base `1000+`). El IL escribe `%Q` directo; hay que validar en
+> KincoBuilder como expone el esclavo Modbus cada `%Qx.y`.

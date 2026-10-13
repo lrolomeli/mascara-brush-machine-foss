@@ -235,7 +235,17 @@ Selecciona el perfil activo en `config/app_config.json` o en la pestaña Configu
 ```bash
 # Levanta un simulador interno y valida escritura/lectura del adapter
 .venv/bin/python tests/test_adapter.py
+
+# Prueba contra un PLC Kinco fisico (HMI->PLC, PLC->HMI, escaneo de mapeo)
+.venv/bin/python tests/test_io_hardware.py --ip 192.168.0.252 --scan
+.venv/bin/python tests/test_io_hardware.py --ip 192.168.0.252 --hmi-to-plc
+
+# Prueba de servo (pulsos + direccion + enable) y descubrimiento M/V
+.venv/bin/python tests/test_servo_hardware.py --ip 192.168.0.252 --scan
+.venv/bin/python tests/test_servo_hardware.py --ip 192.168.0.252 --status
 ```
+
+Guia completa de pruebas fisicas: [`docs/pruebas_plc_fisico.md`](docs/pruebas_plc_fisico.md).
 
 ---
 

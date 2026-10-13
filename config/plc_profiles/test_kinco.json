@@ -1,0 +1,112 @@
+{
+    "name": "Kinco Test Servo",
+    "description": "Perfil de prueba de servo (K615S-16DT, plc/test_servo.il): comandos en %M, parametros en %V, AXIS0 Q0.0/Q0.2, enable Q0.3.",
+    "notes": "Direcciones de %M y %V son PROVISIONALES (offset Kinco) hasta confirmarlas con el Apendice A de KincoBuilder o tests/test_servo_hardware.py --scan. Salidas Q->coil desde 0; I->discrete desde 0. NO usar en produccion.",
+    "tags": {
+        "IN_POSITION": {
+            "type": "discrete_input",
+            "address": 0,
+            "description": "In-position ready del servo (%I0.0)"
+        },
+        "HOME_SENSOR": {
+            "type": "discrete_input",
+            "address": 1,
+            "description": "Sensor de proximidad / HOME (%I0.1)"
+        },
+        "SERVO_PULSE": {
+            "type": "coil",
+            "address": 0,
+            "description": "Tren de pulsos (%Q0.0) - solo lectura"
+        },
+        "SERVO_DIR": {
+            "type": "coil",
+            "address": 2,
+            "description": "Direccion (%Q0.2) - solo lectura"
+        },
+        "SERVO_ENABLE": {
+            "type": "coil",
+            "address": 3,
+            "description": "Servo ON (%Q0.3) - solo lectura"
+        },
+        "CMD_ENABLE": {
+            "type": "coil",
+            "address": 320,
+            "description": "Comando ENABLE (%M0.0) - AJUSTAR offset"
+        },
+        "CMD_HOME": {
+            "type": "coil",
+            "address": 321,
+            "description": "Comando HOME (%M0.1) - AJUSTAR offset"
+        },
+        "CMD_MOVE": {
+            "type": "coil",
+            "address": 322,
+            "description": "Comando MOVE absoluto (%M0.2) - AJUSTAR offset"
+        },
+        "CMD_JOG_FWD": {
+            "type": "coil",
+            "address": 323,
+            "description": "Comando JOG adelante (%M0.3) - AJUSTAR offset"
+        },
+        "CMD_JOG_REV": {
+            "type": "coil",
+            "address": 324,
+            "description": "Comando JOG atras (%M0.4) - AJUSTAR offset"
+        },
+        "CMD_STOP": {
+            "type": "coil",
+            "address": 325,
+            "description": "Comando STOP (%M0.5) - AJUSTAR offset"
+        },
+        "SERVO_MINF": {
+            "type": "holding_register",
+            "address": 150,
+            "description": "Frecuencia inicial Hz (%VW100) - AJUSTAR offset"
+        },
+        "SERVO_TIME": {
+            "type": "holding_register",
+            "address": 151,
+            "description": "Tiempo accel/decel ms (%VW102) - AJUSTAR offset"
+        },
+        "SERVO_MAXF_LO": {
+            "type": "holding_register",
+            "address": 152,
+            "description": "Frecuencia maxima Hz, word bajo (%VD104) - AJUSTAR"
+        },
+        "SERVO_MAXF_HI": {
+            "type": "holding_register",
+            "address": 153,
+            "description": "Frecuencia maxima Hz, word alto (%VD104) - AJUSTAR"
+        },
+        "SERVO_POS_LO": {
+            "type": "holding_register",
+            "address": 154,
+            "description": "Posicion objetivo pulsos, word bajo (%VD108) - AJUSTAR"
+        },
+        "SERVO_POS_HI": {
+            "type": "holding_register",
+            "address": 155,
+            "description": "Posicion objetivo pulsos, word alto (%VD108) - AJUSTAR"
+        },
+        "SERVO_DIRC": {
+            "type": "holding_register",
+            "address": 156,
+            "description": "Direccion de homing (%VW112) - AJUSTAR offset"
+        },
+        "SERVO_MODE": {
+            "type": "holding_register",
+            "address": 157,
+            "description": "Modo de homing (%VW114) - AJUSTAR offset"
+        },
+        "SERVO_POSACT_LO": {
+            "type": "holding_register",
+            "address": 158,
+            "description": "Posicion actual pulsos, word bajo (%VD116) - AJUSTAR"
+        },
+        "SERVO_POSACT_HI": {
+            "type": "holding_register",
+            "address": 159,
+            "description": "Posicion actual pulsos, word alto (%VD116) - AJUSTAR"
+        }
+    }
+}

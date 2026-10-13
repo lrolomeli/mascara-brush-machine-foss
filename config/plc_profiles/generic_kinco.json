@@ -68,11 +68,6 @@
             "address": 1,
             "description": "Boton STOP fisico S3"
         },
-        "S1_EMERGENCY_STOP": {
-            "type": "coil",
-            "address": 3,
-            "description": "Paro emergencia S1 (NC)"
-        },
         "S4_CONTINUOUS": {
             "type": "coil",
             "address": 8,
@@ -176,7 +171,7 @@
         "S1_EMERGENCY_STOP": {
             "type": "discrete_input",
             "address": 24,
-            "description": "Paro emergencia I0.2 (NC)"
+            "description": "Paro emergencia fisico I0.2 (NC). El IL lo usa como %M0.3 (=CMD_ESTOP coil 3); pendiente espejo %I0.2 -> %M0.3"
         },
         "CMD_Y1": {
             "type": "coil",
@@ -445,18 +440,18 @@
         },
         "Paso_Pinza": {
             "type": "holding_register",
-            "address": 401,
-            "description": "Estado rama pinza"
+            "address": 402,
+            "description": "Estado rama pinza (IL: %VW402)"
         },
         "STEP_NUMBER": {
             "type": "holding_register",
-            "address": 401,
+            "address": 402,
             "description": "HMI paso actual (Paso_Pinza)"
         },
         "MACHINE_STATE": {
             "type": "holding_register",
-            "address": 402,
-            "description": "HMI estado maquina"
+            "address": 404,
+            "description": "HMI estado maquina (desplazado para no colisionar con %VW402)"
         },
         "SERVO_SPEED": {
             "type": "holding_register",

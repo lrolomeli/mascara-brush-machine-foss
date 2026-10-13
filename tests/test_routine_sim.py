@@ -199,7 +199,7 @@ def test_read_path():
     h.write_coil("CMD_START", True)
     h.run(1.0)
     assert h.read_hr_val(400) == 10, f"Paso_Alambre HR=400 esperado 10, got {h.read_hr_val(400)}"
-    assert h.read_hr_val(401) in (0, 10), f"Paso_Pinza HR=401 inesperado {h.read_hr_val(401)}"
+    assert h.read_hr_val(402) in (0, 10), f"Paso_Pinza HR=402 inesperado {h.read_hr_val(402)}"
     print("[OK] lectura Modbus: coils, discrete inputs y holding registers")
 
 

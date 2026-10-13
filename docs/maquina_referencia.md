@@ -16,6 +16,12 @@ del repositorio.
 Mapeo físico real de la máquina. La lista completa de direcciones Modbus está en
 [`docs/modbus_generic_map.md`](modbus_generic_map.md).
 
+> **Mapa canónico alineado al IL:** las direcciones `%I/%Q/%M` reales y su
+> estado de verificación están en [`IO-PLC.csv`](IO-PLC.csv) (fuente de verdad:
+> `plc/generic_main.il`). El plano original sin tocar quedó en
+> [`IO-PLC_plano_original.csv`](IO-PLC_plano_original.csv). Las discrepancias
+> están marcadas como `VERIFICAR`; ver [`verificacion_hardware.md`](verificacion_hardware.md).
+
 ### Entradas (botonera y selectores)
 
 | Símb. | Nombre real                 | Descripción                              |

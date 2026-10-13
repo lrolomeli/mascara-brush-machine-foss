@@ -32,6 +32,7 @@ from hmi.ui.views.manual_view import ManualView
 from hmi.ui.views.outputs_debug_view import OutputsDebugView
 from hmi.ui.views.servo_view import ServoView
 from hmi.ui.views.sensors_view import SensorsView
+from hmi.ui.views.servo_test_view import ServoTestView
 from hmi.ui.views.settings_view import SettingsView
 
 logger = logging.getLogger(__name__)
@@ -43,6 +44,7 @@ TAB_NAMES = [
     ("Actuadores", "outputs"),
     ("Depuracion por pasos", "manual"),
     ("Servo", "servo"),
+    ("Test Servo", "servo_test"),
     ("Configuracion", "settings"),
 ]
 
@@ -191,6 +193,7 @@ class MainWindow(QMainWindow):
 
         self._manual_view = ManualView()
         self._servo_view = ServoView()
+        self._servo_test_view = ServoTestView()
         self._sensors_view = SensorsView()
         self._outputs_debug_view = OutputsDebugView()
         self._settings_view = SettingsView()
@@ -199,6 +202,7 @@ class MainWindow(QMainWindow):
         self._stacked.addWidget(self._outputs_debug_view)
         self._stacked.addWidget(self._manual_view)
         self._stacked.addWidget(self._servo_view)
+        self._stacked.addWidget(self._servo_test_view)
         self._stacked.addWidget(self._settings_view)
 
         center_area.addWidget(self._stacked, 1)
@@ -496,6 +500,9 @@ class MainWindow(QMainWindow):
         self._outputs_debug_view.output_command.connect(
             lambda tag, v: self._worker.enqueue_write(tag, v))
 
+        self._servo_test_view.write_tag.connect(
+            lambda tag, v: self._worker.enqueue_write(tag, v))
+
         self._servo_view.jog_fwd.connect(
             lambda v: self._worker.enqueue_write("SERVO_JOG_FWD", v))
         self._servo_view.jog_rev.connect(
@@ -516,6 +523,7 @@ class MainWindow(QMainWindow):
         self._manual_view.update_data(data)
         self._outputs_debug_view.update_data(data)
         self._servo_view.update_data(data)
+        self._servo_test_view.update_data(data)
         self._sensors_view.update_data(data)
 
         h3_alarm = data.get("H3", False)
@@ -631,8 +639,6 @@ class MainWindow(QMainWindow):
     @Slot(str)
     def _on_profile_changed(self, profile_path: str) -> None:
         self._worker.load_new_profile(profile_path)
-        tag_names = list(self._worker.adapter.profile.tags.keys())
-        self._debug_view.set_tag_names(tag_names)
         logger.info("Perfil cambiado a: %s", self._worker.adapter.profile.name)
 
     @Slot(str, int)
