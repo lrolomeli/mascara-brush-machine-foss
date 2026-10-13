@@ -217,8 +217,12 @@ bornes sin cablear ni ocupar salidas reales. Patron:
 
 Comandos: `%M0.0` ENABLE, `%M0.1` HOME, `%M0.2` MOVE, `%M0.3` JOG+, `%M0.4` JOG-,
 `%M0.5` STOP. Parametros en `%V`: `VW100` MINF, `VW102` TIME, `VD104` MAXF,
-`VD108` POS, `VW112` DIRC, `VW114` MODE. Estado: `VD116` = posicion actual
-(copia de `SMD212`).
+`VD108` POS, `VW112` DIRC, `VW114` MODE, `VW120` DIRC de jog (interno). Estado:
+`VD116` = posicion actual (copia de `SMD212`).
+
+> **Nota de compilacion**: en `PJOG`, `MAXF` y `DIRC` deben ser **ambos constantes
+> o ambos variables**. Por eso el jog usa `DIRC` en `%VW120` (variable), no una
+> constante.
 
 ### 11.3 Descubrir el mapeo de `%M` y `%V`
 
