@@ -70,7 +70,13 @@ class ModbusWorker(QThread):
 
             while self._write_queue:
                 tag_name, value = self._write_queue.pop(0)
-                ok = self._adapter.write_tag(tag_name, value)
+                try:
+                    ok = self._adapter.write_tag(tag_name, value)
+                except Exception as e:
+                    logger.error("Error escribiendo %s: %s", tag_name, e)
+                    self.error_occurred.emit(
+                        f"Tag no valido para el perfil activo: {tag_name}")
+                    continue
                 if not ok:
                     self.error_occurred.emit(f"Error escribiendo {tag_name}")
 
