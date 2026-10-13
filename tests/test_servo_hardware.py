@@ -66,18 +66,23 @@ def read_discrete(ad: ModbusTCPAdapter, start: int, count: int) -> list[bool]:
         return []
 
 
-def read_holding(ad: ModbusTCPAdapter, start: int, count: int) -> list[int]:
-    out: list[int] = []
-    try:
-        while len(out) < count:
-            n = min(125, count - len(out))
-            r = ad._client.read_holding_registers(start + len(out), count=n,
+def read_holding(ad: ModbusTCPAdapter, start: int, count: int) -> list:
+    out: list = []
+    pos = start
+    end = start + count
+    while pos < end:
+        n = min(25, end - pos)
+        try:
+            r = ad._client.read_holding_registers(pos, count=n,
                                                   device_id=ad._unit_id)
             if r.isError():
-                break
-            out.extend(r.registers[:n])
-    except Exception as e:
-        print(f"  [AVISO] lectura de holding fallo: {e}")
+                out.extend([None] * n)
+            else:
+                out.extend(r.registers[:n])
+        except Exception as e:
+            print(f"  [AVISO] lectura de holding fallo: {e}")
+            out.extend([None] * n)
+        pos += n
     return out
 
 
@@ -96,7 +101,8 @@ def scan(ad: ModbusTCPAdapter) -> None:
     v_base = None
     for i, v in enumerate(hr):
         if v == V_MARKER:
-            v_base = i - 200
+            # marcador en VW200 -> holding 200 ; VW0 = holding 100
+            v_base = i - 100
             print(f"  Marcador V (0x1234) en holding {i} -> VW0 = holding {v_base}")
             break
     if v_base is None:

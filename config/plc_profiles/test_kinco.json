@@ -1,7 +1,7 @@
 {
     "name": "Kinco Test Servo",
     "description": "Perfil de prueba de servo (K615S-16DT, plc/test_servo.il). Comandos y parametros en %V (holding), salidas en Q (coils), entradas en I (discrete).",
-    "notes": "Mapeo confirmado en hardware: VWn -> holding register n (V es escribible); Q->coils desde 0; I->discrete desde 0. El area %M NO se expone por Modbus TCP en este K6S. NO usar en produccion.",
+    "notes": "Mapeo confirmado en hardware K615S-16DT: holding = 100 + VW_byte/2 (VW0->100, VW200->200). Q->coils desde 0; I->discrete desde 0. Ilegales 64..99. El area %M NO se expone por Modbus TCP. NO usar en produccion.",
     "tags": {
         "IN_POSITION": {
             "type": "discrete_input",
@@ -30,82 +30,82 @@
         },
         "CMD_ENABLE": {
             "type": "holding_register",
-            "address": 0,
+            "address": 100,
             "description": "Comando ENABLE (VW0=1/0)"
         },
         "CMD_HOME": {
             "type": "holding_register",
-            "address": 2,
+            "address": 101,
             "description": "Comando HOME (VW2=1/0)"
         },
         "CMD_MOVE": {
             "type": "holding_register",
-            "address": 4,
+            "address": 102,
             "description": "Comando MOVE absoluto (VW4=1/0)"
         },
         "CMD_JOG_FWD": {
             "type": "holding_register",
-            "address": 6,
+            "address": 103,
             "description": "Comando JOG adelante (VW6=1/0)"
         },
         "CMD_JOG_REV": {
             "type": "holding_register",
-            "address": 8,
+            "address": 104,
             "description": "Comando JOG atras (VW8=1/0)"
         },
         "CMD_STOP": {
             "type": "holding_register",
-            "address": 10,
+            "address": 105,
             "description": "Comando STOP (VW10=1/0)"
         },
         "SERVO_MINF": {
             "type": "holding_register",
-            "address": 100,
+            "address": 150,
             "description": "Frecuencia inicial Hz (%VW100)"
         },
         "SERVO_TIME": {
             "type": "holding_register",
-            "address": 102,
+            "address": 151,
             "description": "Tiempo accel/decel ms (%VW102)"
         },
         "SERVO_MAXF_LO": {
             "type": "holding_register",
-            "address": 104,
+            "address": 152,
             "description": "Frecuencia maxima Hz, word bajo (%VD104)"
         },
         "SERVO_MAXF_HI": {
             "type": "holding_register",
-            "address": 106,
+            "address": 153,
             "description": "Frecuencia maxima Hz, word alto (%VD104)"
         },
         "SERVO_POS_LO": {
             "type": "holding_register",
-            "address": 108,
+            "address": 154,
             "description": "Posicion objetivo pulsos, word bajo (%VD108)"
         },
         "SERVO_POS_HI": {
             "type": "holding_register",
-            "address": 110,
+            "address": 155,
             "description": "Posicion objetivo pulsos, word alto (%VD108)"
         },
         "SERVO_DIRC": {
             "type": "holding_register",
-            "address": 112,
+            "address": 156,
             "description": "Direccion de homing (%VW112)"
         },
         "SERVO_MODE": {
             "type": "holding_register",
-            "address": 114,
+            "address": 157,
             "description": "Modo de homing (%VW114)"
         },
         "SERVO_POSACT_LO": {
             "type": "holding_register",
-            "address": 116,
+            "address": 158,
             "description": "Posicion actual pulsos, word bajo (%VD116)"
         },
         "SERVO_POSACT_HI": {
             "type": "holding_register",
-            "address": 118,
+            "address": 159,
             "description": "Posicion actual pulsos, word alto (%VD116)"
         }
     }

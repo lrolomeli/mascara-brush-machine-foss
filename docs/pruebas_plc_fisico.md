@@ -222,9 +222,16 @@ Parametros en `%V`: `VW100` MINF, `VW102` TIME, `VD104` MAXF, `VD108` POS,
 posicion actual (copia de `SMD212`).
 
 > **Mapeo Modbus confirmado en hardware (K615S-16DT):**
-> `VWn -> holding register n` (V es **escribible**); `Q -> coils` desde 0;
-> `I -> discrete inputs` desde 0. El area **`%M` NO se expone** por Modbus TCP
-> (los bits `%M` puestos por el programa no aparecen en coils/discrete 0..33000).
+> `holding = 100 + (byte de VW)/2` (p. ej. `VW0 -> 100`, `VW200 -> 200`);
+> `Q -> coils` desde 0; `I -> discrete inputs` desde 0. Direcciones **ilegales:
+> 64..99**. El area **`%M` NO se expone** por Modbus TCP (los bits `%M` puestos
+> por el programa no aparecen en coils/discrete 0..33000).
+>
+> Comandos -> holding: `VW0->100` ENABLE, `VW2->101` HOME, `VW4->102` MOVE,
+> `VW6->103` JOG+, `VW8->104` JOG-, `VW10->105` STOP.
+> Parametros -> holding: `VW100->150` MINF, `VW102->151` TIME, `VD104->152/153`
+> MAXF, `VD108->154/155` POS, `VW112->156` DIRC, `VW114->157` MODE,
+> `VD116->158/159` posicion.
 
 > **Nota de compilacion**: en `PJOG`, `MAXF` y `DIRC` deben ser **ambos constantes
 > o ambos variables**. Por eso el jog usa `DIRC` en `%VW120` (variable), no una

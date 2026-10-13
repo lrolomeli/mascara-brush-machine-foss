@@ -54,12 +54,16 @@ Estado: `plc/generic_main.il` compila en KincoBuilder con **0 errores** (commit
 - [x] Programa PLC minimo de comunicacion: `plc/test_io.il` (CRLF).
 - [x] Programa PLC de servo (pulsos+dir+enable): `plc/test_servo.il` (CRLF).
 - [x] Script de comunicacion/descubrimiento: `tests/test_io_hardware.py`.
-- [x] Script de servo/descubrimiento M/V: `tests/test_servo_hardware.py`.
+- [x] Script de servo/descubrimiento: `tests/test_servo_hardware.py`.
 - [x] Perfil minimo HMI: `config/plc_profiles/test_kinco.json`.
 - [x] Pestana HMI **"Test Servo"** (`hmi/ui/views/servo_test_view.py`).
-- [ ] Confirmar el **mapeo Modbus real** del K615S (Apendice A / `--scan`):
-      area `Q` (coils), area `M` (coils) y area `V` (holding).
-- [ ] Ejecutar pruebas en el equipo fisico (comunicacion + servo).
+- [x] **Mapeo Modbus confirmado** en el K615S-16DT:
+      `holding = 100 + (byte de VW)/2` (`VW0->100`, `VW200->200`); `Q->coils`
+      desde 0; `I->discrete` desde 0; ilegales `64..99`. El area **`%M` NO se
+      expone** por Modbus TCP -> los comandos del HMI van en `%V` (holding).
+- [x] Prueba de servo por script: ENABLE (`Q0.3`), MOVE absoluto (pulsos + `Q0.2`
+      direccion), JOG. Validado en hardware (posicion `SMD212` cambia).
+- [ ] Prueba por HMI (pestana "Test Servo").
 - [ ] Restaurar `config/app_config.json` (backup `app_config.json.pre_plc_test.bak`).
 
 ## Referencia
