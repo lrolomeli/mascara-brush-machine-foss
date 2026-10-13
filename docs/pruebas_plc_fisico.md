@@ -215,10 +215,16 @@ pestana **"Test Servo"**.
 bornes sin cablear ni ocupar salidas reales. Patron:
 `HMI --coil--> %M --programa--> %Q`.
 
-Comandos: `%M0.0` ENABLE, `%M0.1` HOME, `%M0.2` MOVE, `%M0.3` JOG+, `%M0.4` JOG-,
-`%M0.5` STOP. Parametros en `%V`: `VW100` MINF, `VW102` TIME, `VD104` MAXF,
-`VD108` POS, `VW112` DIRC, `VW114` MODE, `VW120` DIRC de jog (interno). Estado:
-`VD116` = posicion actual (copia de `SMD212`).
+Comandos en `%V` (holding, **el K6S no expone `%M` por Modbus TCP**):
+`VW0` ENABLE, `VW2` HOME, `VW4` MOVE, `VW6` JOG+, `VW8` JOG-, `VW10` STOP.
+Parametros en `%V`: `VW100` MINF, `VW102` TIME, `VD104` MAXF, `VD108` POS,
+`VW112` DIRC, `VW114` MODE, `VW120` DIRC de jog (interno). Estado: `VD116` =
+posicion actual (copia de `SMD212`).
+
+> **Mapeo Modbus confirmado en hardware (K615S-16DT):**
+> `VWn -> holding register n` (V es **escribible**); `Q -> coils` desde 0;
+> `I -> discrete inputs` desde 0. El area **`%M` NO se expone** por Modbus TCP
+> (los bits `%M` puestos por el programa no aparecen en coils/discrete 0..33000).
 
 > **Nota de compilacion**: en `PJOG`, `MAXF` y `DIRC` deben ser **ambos constantes
 > o ambos variables**. Por eso el jog usa `DIRC` en `%VW120` (variable), no una
@@ -226,17 +232,14 @@ Comandos: `%M0.0` ENABLE, `%M0.1` HOME, `%M0.2` MOVE, `%M0.3` JOG+, `%M0.4` JOG-
 
 ### 11.3 Descubrir el mapeo de `%M` y `%V`
 
-El programa deja **marcadores**:
-- `%M1.0=1, %M1.2=1, %M1.4=1` (patron `10101`).
-- `%VW200 = 0x1234` (4660).
+El programa deja un **marcador**:
+- `%VW200 = 0x1234` (4660) -> aparece en el **holding register 200**.
 
 ```bash
 .venv/bin/python tests/test_servo_hardware.py --ip 192.168.0.252 --scan
 ```
 
-El script reporta el **offset del area M** (donde aparece el patron) y el
-**offset del area V** (donde aparece `0x1234`). Ajustar las direcciones en
-`config/plc_profiles/test_kinco.json` y, si cambia la base, en el IL.
+El script confirma que `VW200` aparece en el registro **200** (mapeo `VWn -> n`).
 
 ### 11.4 Secuencia de prueba
 

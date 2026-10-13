@@ -1,7 +1,7 @@
 {
     "name": "Kinco Test Servo",
-    "description": "Perfil de prueba de servo (K615S-16DT, plc/test_servo.il): comandos en %M, parametros en %V, AXIS0 Q0.0/Q0.2, enable Q0.3.",
-    "notes": "Direcciones de %M y %V son PROVISIONALES (offset Kinco) hasta confirmarlas con el Apendice A de KincoBuilder o tests/test_servo_hardware.py --scan. Salidas Q->coil desde 0; I->discrete desde 0. NO usar en produccion.",
+    "description": "Perfil de prueba de servo (K615S-16DT, plc/test_servo.il). Comandos y parametros en %V (holding), salidas en Q (coils), entradas en I (discrete).",
+    "notes": "Mapeo confirmado en hardware: VWn -> holding register n (V es escribible); Q->coils desde 0; I->discrete desde 0. El area %M NO se expone por Modbus TCP en este K6S. NO usar en produccion.",
     "tags": {
         "IN_POSITION": {
             "type": "discrete_input",
@@ -29,84 +29,84 @@
             "description": "Servo ON (%Q0.3) - solo lectura"
         },
         "CMD_ENABLE": {
-            "type": "coil",
-            "address": 320,
-            "description": "Comando ENABLE (%M0.0) - AJUSTAR offset"
+            "type": "holding_register",
+            "address": 0,
+            "description": "Comando ENABLE (VW0=1/0)"
         },
         "CMD_HOME": {
-            "type": "coil",
-            "address": 321,
-            "description": "Comando HOME (%M0.1) - AJUSTAR offset"
+            "type": "holding_register",
+            "address": 2,
+            "description": "Comando HOME (VW2=1/0)"
         },
         "CMD_MOVE": {
-            "type": "coil",
-            "address": 322,
-            "description": "Comando MOVE absoluto (%M0.2) - AJUSTAR offset"
+            "type": "holding_register",
+            "address": 4,
+            "description": "Comando MOVE absoluto (VW4=1/0)"
         },
         "CMD_JOG_FWD": {
-            "type": "coil",
-            "address": 323,
-            "description": "Comando JOG adelante (%M0.3) - AJUSTAR offset"
+            "type": "holding_register",
+            "address": 6,
+            "description": "Comando JOG adelante (VW6=1/0)"
         },
         "CMD_JOG_REV": {
-            "type": "coil",
-            "address": 324,
-            "description": "Comando JOG atras (%M0.4) - AJUSTAR offset"
+            "type": "holding_register",
+            "address": 8,
+            "description": "Comando JOG atras (VW8=1/0)"
         },
         "CMD_STOP": {
-            "type": "coil",
-            "address": 325,
-            "description": "Comando STOP (%M0.5) - AJUSTAR offset"
+            "type": "holding_register",
+            "address": 10,
+            "description": "Comando STOP (VW10=1/0)"
         },
         "SERVO_MINF": {
             "type": "holding_register",
-            "address": 150,
-            "description": "Frecuencia inicial Hz (%VW100) - AJUSTAR offset"
+            "address": 100,
+            "description": "Frecuencia inicial Hz (%VW100)"
         },
         "SERVO_TIME": {
             "type": "holding_register",
-            "address": 151,
-            "description": "Tiempo accel/decel ms (%VW102) - AJUSTAR offset"
+            "address": 102,
+            "description": "Tiempo accel/decel ms (%VW102)"
         },
         "SERVO_MAXF_LO": {
             "type": "holding_register",
-            "address": 152,
-            "description": "Frecuencia maxima Hz, word bajo (%VD104) - AJUSTAR"
+            "address": 104,
+            "description": "Frecuencia maxima Hz, word bajo (%VD104)"
         },
         "SERVO_MAXF_HI": {
             "type": "holding_register",
-            "address": 153,
-            "description": "Frecuencia maxima Hz, word alto (%VD104) - AJUSTAR"
+            "address": 106,
+            "description": "Frecuencia maxima Hz, word alto (%VD104)"
         },
         "SERVO_POS_LO": {
             "type": "holding_register",
-            "address": 154,
-            "description": "Posicion objetivo pulsos, word bajo (%VD108) - AJUSTAR"
+            "address": 108,
+            "description": "Posicion objetivo pulsos, word bajo (%VD108)"
         },
         "SERVO_POS_HI": {
             "type": "holding_register",
-            "address": 155,
-            "description": "Posicion objetivo pulsos, word alto (%VD108) - AJUSTAR"
+            "address": 110,
+            "description": "Posicion objetivo pulsos, word alto (%VD108)"
         },
         "SERVO_DIRC": {
             "type": "holding_register",
-            "address": 156,
-            "description": "Direccion de homing (%VW112) - AJUSTAR offset"
+            "address": 112,
+            "description": "Direccion de homing (%VW112)"
         },
         "SERVO_MODE": {
             "type": "holding_register",
-            "address": 157,
-            "description": "Modo de homing (%VW114) - AJUSTAR offset"
+            "address": 114,
+            "description": "Modo de homing (%VW114)"
         },
         "SERVO_POSACT_LO": {
             "type": "holding_register",
-            "address": 158,
-            "description": "Posicion actual pulsos, word bajo (%VD116) - AJUSTAR"
+            "address": 116,
+            "description": "Posicion actual pulsos, word bajo (%VD116)"
         },
         "SERVO_POSACT_HI": {
             "type": "holding_register",
-            "address": 159,
-            "description": "Posicion actual pulsos, word alto (%VD116) - AJUSTAR"
+            "address": 118,
+            "description": "Posicion actual pulsos, word alto (%VD116)"
         }
     }
 }

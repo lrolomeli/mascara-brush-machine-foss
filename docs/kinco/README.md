@@ -41,3 +41,8 @@ Cubre la sintaxis de las instrucciones en **IL** (y referencias a LD).
 - Fuente OCR ISO-8859-1 con finales CRLF/CR mixtos; normalizado a UTF-8/LF.
 - Se eliminaron bloques de navegacion repetidos (`Parent Directory:`, `See Also:`).
 - Tablas de operandos reconstruidas best-effort; revisar contra el PDF original.
+
+## Temas adicionales
+
+- [Memoria retentiva y backup](memoria-retencion-y-backup.md) - retencion en RAM
+  (bateria/supercap) y backup permanente en E²PROM (`VB3648-VB4095`, etc.).

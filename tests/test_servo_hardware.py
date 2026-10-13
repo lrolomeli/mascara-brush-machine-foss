@@ -81,26 +81,13 @@ def read_holding(ad: ModbusTCPAdapter, start: int, count: int) -> list[int]:
     return out
 
 
-def find_m_base(coils: list[bool]) -> int | None:
-    n = len(coils)
-    for base in range(n - max(M_PATTERN)):
-        if all(coils[base + o] for o in M_PATTERN) and not coils[base + 1]:
-            return base
-    return None
-
-
 def scan(ad: ModbusTCPAdapter) -> None:
     print("--- Escaneo de mapeo Modbus (test_servo) ---")
-    coils = read_coils(ad, 0, 512)
-    on = [i for i, v in enumerate(coils) if v]
-    print(f"  Coils ON (0..511): {on}")
+    print("  (K6S: Q->coils, I->discrete, V->holding; el area %M NO se expone)")
 
-    m_base = find_m_base(coils)
-    if m_base is not None:
-        print(f"  Offset area M detectado: M0.0 -> coil {m_base} "
-              f"(patron {[m_base + o for o in M_PATTERN]})")
-    else:
-        print("  [AVISO] no se detecto el patron de M (revisar que el IL este cargado)")
+    coils = read_coils(ad, 0, 200)
+    on = [i for i, v in enumerate(coils) if v]
+    print(f"  Coils ON (0..199): {on}")
 
     di = read_discrete(ad, 0, 64)
     print(f"  Discrete ON (0..63): {[i for i, v in enumerate(di) if v]}")
@@ -109,13 +96,12 @@ def scan(ad: ModbusTCPAdapter) -> None:
     v_base = None
     for i, v in enumerate(hr):
         if v == V_MARKER:
-            v_base = i - 100
-            print(f"  Offset area V detectado: VW0 -> holding {v_base} "
-                  f"(marcador 0x1234 en holding {i})")
+            v_base = i - 200
+            print(f"  Marcador V (0x1234) en holding {i} -> VW0 = holding {v_base}")
             break
     if v_base is None:
-        print("  [AVISO] no se encontro el marcador V (0x1234)")
-    print(f"  Holding 140..170: {hr[140:170]}")
+        print("  [AVISO] no se encontro el marcador V (0x1234); "
+              "revisar que test_servo.il este cargado")
 
 
 def status(ad: ModbusTCPAdapter) -> None:
