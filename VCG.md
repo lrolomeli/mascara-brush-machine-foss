@@ -43,7 +43,8 @@ Auto/Manual** (`SEL(S_MANUAL, Auto_*, CMD_*)`) para forzar salidas desde el HMI.
 | `plc/test_servo.il` | Programa PLC de **servo** (pulsos/dir/enable, AXIS 0). CRLF. |
 | `tests/test_io_hardware.py` | Prueba contra PLC fisico: `--hmi-to-plc`, `--plc-to-hmi`, `--scan`. |
 | `tests/test_servo_hardware.py` | Prueba de servo + descubrimiento M/V (`--scan`, `--enable`, `--move`, `--jog`). |
-| `hmi/ui/views/servo_test_view.py` | Pestana **"Test Servo"** (comandos %M + parametros %V). |
+| `tests/test_servo_sweep.py` | Barrido de frecuencia del servo (5 kHz..200 kHz) buscando el limite fiable; replica la secuencia JOG+/JOG- y reporta deltas de posicion. |
+| `hmi/ui/views/servo_test_view.py` | Pestana **"Test Servo"** (comandos %M + parametros %V). 4 secciones navegables: Estado, Control, Parametros, **Barrido**. |
 | `config/plc_profiles/test_kinco.json` | Perfil minimo **solo para pruebas fisicas** (no produccion). |
 | `docs/pruebas_plc_fisico.md` | Guia paso a paso de pruebas con el K615S-16DT. |
 | `docs/kinco/memoria-retencion-y-backup.md` | Retencion (RAM/bateria) y backup permanente E²PROM. |
@@ -91,6 +92,7 @@ Auto/Manual** (`SEL(S_MANUAL, Auto_*, CMD_*)`) para forzar salidas desde el HMI.
 |---------|------|-------------|
 | Depuracion por pasos | `manual_view` | Displays Paso Alambre/Pinza + botón PASO SIGUIENTE |
 | Servo | `servo_view` | Reservada (no implementada) |
+| Test Servo | `servo_test_view` | Secciones Estado/Control/Parametros/**Barrido** (prueba plc `test_servo.il`) |
 | Sensores | `sensors_view` | Sensores en vivo con LEDs y nombres |
 | Actuadores | `outputs_debug_view` | Forzado de salidas Y*/M* |
 | Depuracion | `debug_view` | Lectura/escritura directa de tags |

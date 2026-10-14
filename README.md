@@ -138,6 +138,7 @@ simulador: `e` (E-Stop), `h3`/`h8` (toggle alarmas), `s` (estado), `q` (salir).
 |----------------------|-----------------------------------------------------------------------------|
 | **Depuracion por pasos** | Displays de paso (Alambre/Pinza) + botón PASO SIGUIENTE                   |
 | **Servo**            | Control de velocidad, posición y modo Jog del servomotor (reservado).        |
+| **Test Servo**       | Prueba de servo (pulsos/dir/enable): Estado, Control, Parámetros y Barrido de frecuencia. |
 | **Sensores**         | Vista en vivo de todos los sensores con LEDs indicadores y nombres completos.|
 | **Actuadores**       | Forzado individual de cada salida (Y*/M*) + warning si no está en Manual.   |
 | **Depuracion**       | Lectura/escritura directa de cualquier tag + log de operaciones.             |
@@ -243,6 +244,9 @@ Selecciona el perfil activo en `config/app_config.json` o en la pestaña Configu
 # Prueba de servo (pulsos + direccion + enable) y descubrimiento M/V
 .venv/bin/python tests/test_servo_hardware.py --ip 192.168.0.252 --scan
 .venv/bin/python tests/test_servo_hardware.py --ip 192.168.0.252 --status
+
+# Barrido de frecuencia del servo (buscar el limite fiable, 5 kHz..200 kHz)
+.venv/bin/python tests/test_servo_sweep.py --ip 192.168.0.252
 ```
 
 Guia completa de pruebas fisicas: [`docs/pruebas_plc_fisico.md`](docs/pruebas_plc_fisico.md).

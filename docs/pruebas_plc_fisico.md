@@ -271,6 +271,37 @@ Con el **HMI**: pestana **Test Servo** -> `ENABLE`, `HOME`, fijar `POS` y `MOVER
 `JOG +/-`, `STOP`. Los LEDs muestran `IN POSITION`, `HOME`, `DIR`, `ENABLE` y el
 display la **posicion actual**.
 
+### 11.4.1 Barrido de frecuencia (buscar el limite fiable)
+
+`MAXF` admite **125 Hz .. 200 kHz**. Para encontrar donde la frecuencia deja de
+ser fiable se hace un barrido progresivo: por cada frecuencia se ajusta `MAXF`,
+se pulsa `JOG+` 1.2 s, se lee la posicion, se pulsa `JOG-` 1.2 s y se vuelve a
+leer. El criterio orientativo es `|dFWD| ~= MAXF * t_jog`; si el delta se
+desploma (ratio < 0.85) o no retorna al origen, se marca `REVISAR`
+(ademas hay que **mirar el motor**).
+
+**Por script** (`tests/test_servo_sweep.py`):
+
+```bash
+# Barrido completo 5 kHz .. 200 kHz (def. 5000,7500,...,150000,200000)
+.venv/bin/python tests/test_servo_sweep.py --ip 192.168.0.252
+
+# Secuencia y tiempos personalizados
+.venv/bin/python tests/test_servo_sweep.py --ip 192.168.0.252 \
+    --freqs "5000,10000,20000,40000,80000,160000,200000" --jog-time 0.5
+```
+
+Opciones: `--jog-time` (s), `--settle` (s), `--minf`, `--mode`, `--dirc`,
+`--threshold` (ratio minimo), `--no-disable` (no apagar el servo al terminar).
+
+**Por HMI**: pestana **Test Servo** -> seccion **BARRIDO** (flechas ▲/▼ hasta
+llegar a `BARRIDO`). Editar la lista de frecuencias, fijar el tiempo de JOG y el
+asentamiento, pulsar `INICIAR BARRIDO`. La tabla muestra `MAXF | POS ini | dFWD |
+dREV | retorno | ratio | estado` fila a fila; `CANCELAR` detiene y hace `STOP`.
+
+> Requiere el perfil **`test_kinco`** activo (los tags de servo solo existen ese
+> perfil) y conexion a `192.168.0.252`.
+
 ### 11.5 Criterios de aceptacion (servo)
 
 - [ ] `--scan` identifica offset de `M` y de `V`.

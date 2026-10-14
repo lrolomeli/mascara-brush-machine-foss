@@ -8,19 +8,23 @@ Pensada para el programa `plc/test_servo.il`:
 
 Esta vista NO toca las salidas fisicas: solo escribe comandos y parametros.
 
-Secciones navegables: Estado, Control, Parametros.
+Secciones navegables: Estado, Control, Parametros, Barrido.
 """
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QFont
+from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtGui import QBrush, QColor, QFont
 from PySide6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
+    QLineEdit,
     QPushButton,
     QSpinBox,
+    QTableWidget,
+    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
@@ -36,14 +40,27 @@ from hmi.ui.widgets import (
 
 
 class ServoTestView(QWidget):
-    """Vista de prueba de servo (comandos + parametros + estado)."""
+    """Vista de prueba de servo (comandos + parametros + estado + barrido)."""
 
     write_tag = Signal(str, object)
+
+    FREQS_DEFAULT = ("5000, 7500, 10000, 15000, 20000, 30000, 40000, "
+                     "50000, 70000, 100000, 150000, 200000")
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self._current_section = 0
         self._sections: list[QWidget] = []
+        self._latest_pos = 0
+        self._sweep_timer = QTimer(self)
+        self._sweep_timer.setSingleShot(True)
+        self._sweep_timer.timeout.connect(self._sweep_step)
+        self._sweep_freqs: list[int] = []
+        self._sweep_idx = 0
+        self._sweep_state = ""
+        self._sweep_pos0 = 0
+        self._sweep_pos1 = 0
+        self._sweep_running = False
         self._build_ui()
 
     # ------------------------------------------------------------------
@@ -86,6 +103,7 @@ class ServoTestView(QWidget):
         self._build_status_section()
         self._build_control_section()
         self._build_params_section()
+        self._build_sweep_section()
 
         self._show_section(0)
         root.addStretch()
@@ -144,6 +162,15 @@ class ServoTestView(QWidget):
         layout = QVBoxLayout(section)
         layout.setSpacing(15)
         layout.addWidget(self._build_params_frame())
+        self._sections.append(section)
+        self._container.addWidget(section)
+
+    def _build_sweep_section(self) -> None:
+        section = QWidget(self)
+        section.setVisible(False)
+        layout = QVBoxLayout(section)
+        layout.setSpacing(15)
+        layout.addWidget(self._build_sweep_frame())
         self._sections.append(section)
         self._container.addWidget(section)
 
@@ -264,6 +291,84 @@ class ServoTestView(QWidget):
         layout.addLayout(apply_row)
         return frame
 
+    def _build_sweep_frame(self) -> SectionFrame:
+        frame = SectionFrame("Barrido de frecuencia (buscar limite fiable)")
+        layout = frame.content_layout
+        layout.setSpacing(15)
+
+        cfg_row = QHBoxLayout()
+        cfg_row.setSpacing(15)
+        cfg_row.addWidget(self._label("Frecuencias (Hz, separadas por coma)"))
+
+        self._sweep_freqs_edit = QLineEdit(self.FREQS_DEFAULT)
+        self._sweep_freqs_edit.setStyleSheet("""
+            QLineEdit {
+                background-color: #0d1117;
+                color: #ffffff;
+                border: 1px solid #555555;
+                border-radius: 4px;
+                padding: 6px 8px;
+                font-size: 13px;
+            }
+        """)
+        cfg_row.addWidget(self._sweep_freqs_edit, stretch=1)
+        layout.addLayout(cfg_row)
+
+        time_row = QHBoxLayout()
+        time_row.setSpacing(15)
+        time_row.addWidget(self._label("Tiempo por JOG (ms)"))
+        self._sweep_jog_ms = self._spin(100, 10000, 1200)
+        time_row.addWidget(self._sweep_jog_ms)
+        time_row.addWidget(self._label("Asentamiento (ms)"))
+        self._sweep_settle_ms = self._spin(50, 5000, 300)
+        time_row.addWidget(self._sweep_settle_ms)
+        time_row.addStretch()
+        layout.addLayout(time_row)
+
+        btn_row = QHBoxLayout()
+        btn_row.setSpacing(15)
+        self._btn_sweep_start = IndustrialButton("INICIAR BARRIDO", "start", 260, 70)
+        self._btn_sweep_start.setCheckable(False)
+        self._btn_sweep_start.clicked.connect(self._on_sweep_start)
+        btn_row.addWidget(self._btn_sweep_start)
+
+        self._btn_sweep_cancel = IndustrialButton("CANCELAR", "red_stop", 200, 70)
+        self._btn_sweep_cancel.setCheckable(False)
+        self._btn_sweep_cancel.setEnabled(False)
+        self._btn_sweep_cancel.clicked.connect(self._on_sweep_cancel)
+        btn_row.addWidget(self._btn_sweep_cancel)
+
+        self._sweep_status = self._label("Listo.")
+        btn_row.addWidget(self._sweep_status, stretch=1)
+        layout.addLayout(btn_row)
+
+        self._sweep_table = QTableWidget(0, 7)
+        self._sweep_table.setHorizontalHeaderLabels(
+            ["MAXF (Hz)", "POS ini", "dFWD", "dREV", "retorno",
+             "|dFWD|/esp", "estado"])
+        self._sweep_table.verticalHeader().setVisible(False)
+        self._sweep_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self._sweep_table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch)
+        self._sweep_table.setMinimumHeight(220)
+        self._sweep_table.setStyleSheet("""
+            QTableWidget {
+                background-color: #0d1117;
+                color: #ffffff;
+                gridline-color: #333333;
+                font-size: 12px;
+            }
+            QHeaderView::section {
+                background-color: #16213e;
+                color: #e94560;
+                font-weight: bold;
+                border: 1px solid #333333;
+                padding: 4px;
+            }
+        """)
+        layout.addWidget(self._sweep_table)
+        return frame
+
     def _label(self, text: str) -> QLabel:
         lbl = QLabel(text)
         lbl.setStyleSheet("color: #cccccc; font-size: 13px;")
@@ -300,7 +405,7 @@ class ServoTestView(QWidget):
         for i, section in enumerate(self._sections):
             section.setVisible(i == index)
 
-        titles = ["ESTADO", "CONTROL", "PARAMETROS"]
+        titles = ["ESTADO", "CONTROL", "PARAMETROS", "BARRIDO"]
         self._section_title.setText(titles[index])
         self._current_section = index
 
@@ -332,6 +437,121 @@ class ServoTestView(QWidget):
         self.write_tag.emit("SERVO_MODE", self._sp_mode.value())
 
     # ------------------------------------------------------------------
+    # Barrido de frecuencia (maquina de estados con QTimer)
+    # ------------------------------------------------------------------
+    def _on_sweep_start(self) -> None:
+        try:
+            freqs = [int(x) for x in self._sweep_freqs_edit.text().split(",")
+                     if x.strip()]
+        except ValueError:
+            self._sweep_status.setText("Lista de frecuencias invalida.")
+            return
+        if not freqs:
+            self._sweep_status.setText("Introduce al menos una frecuencia.")
+            return
+
+        self._sweep_freqs = freqs
+        self._sweep_idx = 0
+        self._sweep_table.setRowCount(0)
+        self._sweep_running = True
+        self._btn_sweep_start.setEnabled(False)
+        self._btn_sweep_cancel.setEnabled(True)
+        self._sweep_status.setText("Configurando...")
+        self._sweep_advance("CONFIG", 0)
+
+    def _on_sweep_cancel(self) -> None:
+        self._sweep_timer.stop()
+        self._sweep_running = False
+        self._safe_stop()
+        self._btn_sweep_start.setEnabled(True)
+        self._btn_sweep_cancel.setEnabled(False)
+        self._sweep_status.setText("Cancelado.")
+
+    def _safe_stop(self) -> None:
+        self.write_tag.emit("CMD_JOG_FWD", False)
+        self.write_tag.emit("CMD_JOG_REV", False)
+        self.write_tag.emit("CMD_STOP", True)
+        self.write_tag.emit("CMD_STOP", False)
+
+    def _sweep_advance(self, state: str, delay_ms: int) -> None:
+        self._sweep_state = state
+        self._sweep_timer.start(delay_ms)
+
+    def _sweep_step(self) -> None:
+        if not self._sweep_running:
+            return
+        state = self._sweep_state
+        jog_ms = self._sweep_jog_ms.value()
+        settle_ms = self._sweep_settle_ms.value()
+
+        if state == "CONFIG":
+            self.write_tag.emit("CMD_ENABLE", True)
+            self.write_tag.emit("SERVO_MODE", 1)
+            self.write_tag.emit("SERVO_DIRC", 0)
+            self._sweep_advance("SET_FREQ", 400)
+        elif state == "SET_FREQ":
+            f = self._sweep_freqs[self._sweep_idx]
+            lo, hi = split_dint(f)
+            self.write_tag.emit("SERVO_MAXF_LO", lo)
+            self.write_tag.emit("SERVO_MAXF_HI", hi)
+            self._sweep_status.setText(
+                f"MAXF={f} Hz  (paso {self._sweep_idx + 1}/{len(self._sweep_freqs)})")
+            self._sweep_advance("READ0", 300)
+        elif state == "READ0":
+            self._sweep_pos0 = self._latest_pos
+            self.write_tag.emit("CMD_JOG_FWD", True)
+            self._sweep_advance("FWD_OFF", jog_ms)
+        elif state == "FWD_OFF":
+            self.write_tag.emit("CMD_JOG_FWD", False)
+            self._sweep_advance("READ1", settle_ms)
+        elif state == "READ1":
+            self._sweep_pos1 = self._latest_pos
+            self.write_tag.emit("CMD_JOG_REV", True)
+            self._sweep_advance("REV_OFF", jog_ms)
+        elif state == "REV_OFF":
+            self.write_tag.emit("CMD_JOG_REV", False)
+            self._sweep_advance("READ2", settle_ms)
+        elif state == "READ2":
+            self._record_sweep_row(self._latest_pos)
+            self._sweep_idx += 1
+            if self._sweep_idx < len(self._sweep_freqs):
+                self._sweep_advance("SET_FREQ", 0)
+            else:
+                self._sweep_advance("DONE", 0)
+        elif state == "DONE":
+            self._sweep_finish("Barrido finalizado.")
+
+    def _record_sweep_row(self, pos2: int) -> None:
+        f = self._sweep_freqs[self._sweep_idx]
+        jog_s = self._sweep_jog_ms.value() / 1000.0
+        d_fwd = self._sweep_pos1 - self._sweep_pos0
+        d_rev = pos2 - self._sweep_pos1
+        retorno = abs(pos2 - self._sweep_pos0)
+        esperado = f * jog_s
+        ratio = abs(d_fwd) / esperado if esperado else 0.0
+        revisar = ratio < 0.85
+        estado = "REVISAR" if revisar else "OK"
+
+        row = self._sweep_table.rowCount()
+        self._sweep_table.insertRow(row)
+        valores = [f, self._sweep_pos0, d_fwd, d_rev, retorno,
+                   f"{ratio:.2f}", estado]
+        for col, val in enumerate(valores):
+            item = QTableWidgetItem(str(val))
+            item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            if revisar:
+                item.setForeground(QBrush(QColor("#ff5252")))
+            self._sweep_table.setItem(row, col, item)
+        self._sweep_table.scrollToBottom()
+
+    def _sweep_finish(self, msg: str) -> None:
+        self._sweep_running = False
+        self._safe_stop()
+        self._btn_sweep_start.setEnabled(True)
+        self._btn_sweep_cancel.setEnabled(False)
+        self._sweep_status.setText(msg)
+
+    # ------------------------------------------------------------------
     # Actualizacion de estado (datos del PLC)
     # ------------------------------------------------------------------
     def update_data(self, data: dict) -> None:
@@ -343,6 +563,7 @@ class ServoTestView(QWidget):
         lo = data.get("SERVO_POSACT_LO")
         hi = data.get("SERVO_POSACT_HI")
         if lo is not None and hi is not None:
-            self._display_pos.set_value(join_dint(int(lo), int(hi)))
+            self._latest_pos = join_dint(int(lo), int(hi))
         else:
-            self._display_pos.set_value(data.get("SERVO_POS_ACTUAL", 0))
+            self._latest_pos = int(data.get("SERVO_POS_ACTUAL", 0))
+        self._display_pos.set_value(self._latest_pos)
