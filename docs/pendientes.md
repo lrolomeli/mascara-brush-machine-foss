@@ -63,7 +63,7 @@ Estado: `plc/generic_main.il` compila en KincoBuilder con **0 errores** (commit
       expone** por Modbus TCP -> los comandos del HMI van en `%V` (holding).
 - [x] Prueba de servo por script: ENABLE (`Q0.3`), MOVE absoluto (pulsos + `Q0.2`
       direccion), JOG. Validado en hardware (posicion `SMD212` cambia).
-- [x] Barrido de frecuencia del servo: `tests/test_servo_sweep.py` (5 kHz..200 kHz).
+- [x] Barrido de frecuencia del servo: `tests/test_servo_sweep.py` (nuevo default 30 kHz..40 kHz; `--from/--to/--step` o `--freqs`).
 - [ ] Prueba por HMI (pestana "Test Servo") + seccion BARRIDO.
 - [ ] Restaurar `config/app_config.json` (backup `app_config.json.pre_plc_test.bak`).
 

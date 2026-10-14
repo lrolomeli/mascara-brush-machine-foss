@@ -33,8 +33,12 @@ class SettingsView(QWidget):
     profile_changed = Signal(str)
     connection_test = Signal(str, int)
 
-    def __init__(self, parent=None):
+    def __init__(self, ip: str = "192.168.0.252", port: int = 502,
+                 initial_profile: str | None = None, parent=None):
         super().__init__(parent)
+        self._ip_default = ip
+        self._port_default = port
+        self._initial_profile = initial_profile
         self._build_ui()
         self._discover_profiles()
 
@@ -75,6 +79,7 @@ class SettingsView(QWidget):
             }
         """)
         self._profile_combo.currentIndexChanged.connect(self._on_profile_changed)
+        self._profile_combo.setPlaceholderText("— selecciona un perfil —")
         profile_row.addWidget(self._profile_combo, stretch=1)
         pl.addLayout(profile_row)
 
@@ -90,7 +95,7 @@ class SettingsView(QWidget):
         ip_lbl = QLabel("IP:")
         ip_lbl.setStyleSheet("color: #cccccc; font-size: 14px;")
         ip_row.addWidget(ip_lbl)
-        self._ip_input = QLineEdit("192.168.1.10")
+        self._ip_input = QLineEdit(self._ip_default)
         self._ip_input.setStyleSheet("""
             QLineEdit {
                 background-color: #0d1117;
@@ -108,7 +113,7 @@ class SettingsView(QWidget):
         port_lbl = QLabel("Puerto:")
         port_lbl.setStyleSheet("color: #cccccc; font-size: 14px;")
         port_row.addWidget(port_lbl)
-        self._port_input = QLineEdit("502")
+        self._port_input = QLineEdit(str(self._port_default))
         self._port_input.setMaximumWidth(120)
         self._port_input.setStyleSheet("""
             QLineEdit {
@@ -144,6 +149,7 @@ class SettingsView(QWidget):
 
     def _discover_profiles(self) -> None:
         self._profiles = {}
+        selected_index = -1
         if PROFILES_DIR.exists():
             for f in sorted(PROFILES_DIR.glob("*.json")):
                 with open(f, "r", encoding="utf-8") as fh:
@@ -151,8 +157,20 @@ class SettingsView(QWidget):
                 name = data.get("name", f.stem)
                 self._profiles[name] = str(f)
                 self._profile_combo.addItem(name)
+                if self._initial_profile and str(f) == str(self._initial_profile):
+                    selected_index = self._profile_combo.count() - 1
+
+        # Sin perfil por defecto: deja el combo vacio hasta que el usuario elija.
+        self._profile_combo.blockSignals(True)
+        self._profile_combo.setCurrentIndex(selected_index)
+        self._profile_combo.blockSignals(False)
+        if selected_index >= 0:
+            self._on_profile_changed(selected_index)
 
     def _on_profile_changed(self, index: int) -> None:
+        if index < 0:
+            self._profile_desc.setText("")
+            return
         name = self._profile_combo.currentText()
         if name in self._profiles:
             with open(self._profiles[name], "r", encoding="utf-8") as f:

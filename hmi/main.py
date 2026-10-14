@@ -62,8 +62,7 @@ def load_app_config() -> dict:
         with open(config_path, "r", encoding="utf-8") as f:
             return json.load(f)
     return {
-        "plc": {"ip": "192.168.1.10", "port": 502, "unit_id": 1,
-                "active_profile": "delta_dvp"},
+        "plc": {"ip": "192.168.0.252", "port": 502, "unit_id": 1},
         "polling": {"interval_ms": 100},
     }
 
@@ -91,25 +90,36 @@ def main() -> int:
     from hmi.comms.plc_adapter import ModbusTCPAdapter, PLCProfile
     from hmi.comms.modbus_worker import ModbusWorker
     from hmi.ui.main_window import MainWindow
+    from hmi.config_state import load_state
 
-    active_profile_name = plc_cfg.get("active_profile", "delta_dvp")
-    profile_path = CONFIG_DIR / "plc_profiles" / f"{active_profile_name}.json"
-    if not profile_path.exists():
-        profiles = list((CONFIG_DIR / "plc_profiles").glob("*.json"))
-        if profiles:
-            profile_path = profiles[0]
+    ip = plc_cfg.get("ip", "192.168.0.252")
+    port = plc_cfg.get("port", 502)
+    unit_id = plc_cfg.get("unit_id", 1)
+
+    state = load_state()
+    active_profile_name = state.get("active_profile", "")
+    profile_path = None
+    profile = None
+    if active_profile_name:
+        candidate = CONFIG_DIR / "plc_profiles" / f"{active_profile_name}.json"
+        if candidate.exists():
+            profile_path = candidate
+            profile = PLCProfile.from_json(candidate)
         else:
-            logger.error("No se encontro ningun perfil de PLC en %s", CONFIG_DIR / "plc_profiles")
-            return 1
+            logger.warning("Perfil guardado '%s' no existe; arrancando sin perfil",
+                           active_profile_name)
 
-    profile = PLCProfile.from_json(profile_path)
-    logger.info("Perfil activo: %s (%s)", profile.name, profile_path.name)
+    if profile is None:
+        profile = PLCProfile(name="(sin perfil)", description="", notes="", tags={})
+        logger.info("Sin perfil activo: el HMI esperara a que se seleccione uno.")
+    else:
+        logger.info("Perfil activo: %s (%s)", profile.name, profile_path.name)
 
     adapter = ModbusTCPAdapter(
         profile=profile,
-        host=plc_cfg.get("ip", "192.168.1.10"),
-        port=plc_cfg.get("port", 502),
-        unit_id=plc_cfg.get("unit_id", 1),
+        host=ip,
+        port=port,
+        unit_id=unit_id,
         timeout=plc_cfg.get("timeout_ms", 3000) / 1000.0,
     )
 
@@ -118,10 +128,16 @@ def main() -> int:
         poll_interval_ms=poll_cfg.get("interval_ms", 100),
     )
 
-    window = MainWindow(worker)
+    window = MainWindow(
+        worker,
+        ip=ip,
+        port=port,
+        initial_profile=str(profile_path) if profile_path else None,
+    )
     window.showFullScreen()
 
-    worker.start()
+    if profile.tags:
+        worker.start()
 
     exit_code = app.exec()
 

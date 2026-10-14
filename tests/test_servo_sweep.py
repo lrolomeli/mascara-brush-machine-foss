@@ -13,11 +13,18 @@ Criterio de fiabilidad (orientativo; ademas hay que mirar el motor):
     delta ~= MAXF * tiempo_jog. Si |delta| / esperado < umbral => posible
     perdida de pulsos (se marca REVISAR).
 
+Por defecto barre fino de 30 kHz a 40 kHz (paso 500 Hz) para localizar donde
+el motor deja de responder.
+
 Ejemplos:
-  # Barrido completo (5 kHz .. 200 kHz)
+  # Barrido por defecto (30 kHz .. 40 kHz, paso 500 Hz)
   python tests/test_servo_sweep.py --ip 192.168.0.252
 
-  # Rango/tiempos personalizados
+  # Generar la secuencia con --from/--to/--step
+  python tests/test_servo_sweep.py --ip 192.168.0.252 \\
+      --from 30000 --to 40000 --step 500
+
+  # Lista explicita o tiempos personalizados
   python tests/test_servo_sweep.py --ip 192.168.0.252 \\
       --freqs "5000,10000,20000,40000,80000,160000,200000" --jog-time 0.5
 """
@@ -35,8 +42,7 @@ from hmi.comms.plc_adapter import ModbusTCPAdapter, PLCProfile  # noqa: E402
 
 PROFILE = PROJECT_ROOT / "config" / "plc_profiles" / "test_kinco.json"
 
-FREQS_DEFAULT = [5000, 7500, 10000, 15000, 20000, 30000, 40000,
-                 50000, 70000, 100000, 150000, 200000]
+FREQS_DEFAULT = list(range(30000, 40001, 500))
 
 
 def split_dint(value: int) -> tuple[int, int]:
@@ -120,6 +126,22 @@ def sweep(ad: ModbusTCPAdapter, freqs: list[int], jog_time: float,
         print("Todas las frecuencias dentro del umbral.")
 
 
+def build_freqs(args) -> list[int]:
+    """Construye la secuencia de frecuencias: --freqs > --from/--to/--step > default."""
+    if args.freqs:
+        return [int(x) for x in args.freqs.split(",") if x.strip()]
+    if args.from_hz is not None or args.to_hz is not None or args.step_hz is not None:
+        start = args.from_hz if args.from_hz is not None else 30000
+        end = args.to_hz if args.to_hz is not None else 40000
+        step = args.step_hz if args.step_hz is not None else 500
+        if step <= 0:
+            raise ValueError("--step debe ser > 0")
+        if end < start:
+            raise ValueError("--to debe ser >= --from")
+        return list(range(start, end + 1, step))
+    return list(FREQS_DEFAULT)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Barrido de frecuencia del servo Kinco")
     ap.add_argument("--ip", default="192.168.0.252")
@@ -127,7 +149,13 @@ def main() -> int:
     ap.add_argument("--unit", type=int, default=1)
     ap.add_argument("--timeout", type=float, default=3.0)
     ap.add_argument("--freqs", default=None,
-                    help="lista separada por comas (Hz); por defecto barrido 5k..200k")
+                    help="lista separada por comas (Hz); tiene prioridad sobre --from/--to/--step")
+    ap.add_argument("--from", dest="from_hz", type=int, default=None,
+                    help="frecuencia inicial (Hz) para generar el barrido (def. 30000)")
+    ap.add_argument("--to", dest="to_hz", type=int, default=None,
+                    help="frecuencia final (Hz) para generar el barrido (def. 40000)")
+    ap.add_argument("--step", dest="step_hz", type=int, default=None,
+                    help="paso (Hz) para generar el barrido (def. 500)")
     ap.add_argument("--jog-time", type=float, default=1.2,
                     help="segundos de cada JOG +/- (def. 1.2)")
     ap.add_argument("--settle", type=float, default=0.3,
@@ -141,10 +169,13 @@ def main() -> int:
                     help="no deshabilitar el servo al terminar")
     args = ap.parse_args()
 
-    if args.freqs:
-        freqs = [int(x) for x in args.freqs.split(",") if x.strip()]
-    else:
-        freqs = list(FREQS_DEFAULT)
+    try:
+        freqs = build_freqs(args)
+    except ValueError as e:
+        ap.error(str(e))
+
+    if not freqs:
+        ap.error("la secuencia de frecuencias esta vacia")
 
     bad = [f for f in freqs if f < 125 or f > 200000]
     if bad:

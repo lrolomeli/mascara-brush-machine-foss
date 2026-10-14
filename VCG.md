@@ -28,13 +28,15 @@ Auto/Manual** (`SEL(S_MANUAL, Auto_*, CMD_*)`) para forzar salidas desde el HMI.
 
 | Ruta | Responsabilidad |
 |------|-----------------|
-| `hmi/main.py` | Punto de entrada. Configura tema oscuro, carga `app_config.json`, resuelve el perfil activo, crea `ModbusTCPAdapter` + `ModbusWorker` + `MainWindow`. |
+| `hmi/main.py` | Punto de entrada. Configura tema oscuro, carga `app_config.json` (IP/puerto) y `hmi_state.json` (último perfil), crea `ModbusTCPAdapter` + `ModbusWorker` + `MainWindow`. Sin perfil guardado arranca **sin conectar** (lazy). |
+| `hmi/config_state.py` | Persistencia del último perfil en `config/hmi_state.json` (`load_state`, `save_active_profile`). |
 | `hmi/comms/plc_adapter.py` | Capa Modbus. Clases: `TagInfo` (tipo+dirección), `PLCProfile` (lee JSON, método `from_json`), `PLCAdapter` (ABC), `ModbusTCPAdapter` (lectura en batch con `_merge_ranges`, escritura por tag). **NO tocar salvo cambio de protocolo.** |
 | `hmi/comms/modbus_worker.py` | `QThread` de polling (100 ms). Señales: `data_ready(dict)`, `connection_status(bool)`, `error_occurred(str)`. Métodos: `enqueue_write(tag, value)`, `configure(...)`, `load_new_profile(path)`, `stop()`. |
 | `hmi/ui/main_window.py` | Ventana principal. Contiene `AlarmBar`, `ModeToggle`, panel de controles, y 5 pestañas. Conecta señales de cada view al worker y llama `update_data(data)` en `_on_data`. |
 | `hmi/ui/widgets.py` | Componentes reutilizables: `ModeToggle`, `ValveToggle`, `StatusLED`, `SectionFrame`, `IndustrialButton`, `ServoPositionDisplay`, `SimpleLED`. |
 | `hmi/ui/views/*.py` | Una clase por pestaña: `manual_view` (Depuracion por pasos), `servo_view` (reservada), `sensors_view`, `outputs_debug_view` (Actuadores), `debug_view` (Depuracion), `settings_view` (Configuracion). |
-| `config/app_config.json` | IP/puerto/`unit_id`/`timeout_ms`/`active_profile` + polling + tamaño de pantalla. |
+| `config/app_config.json` | IP/puerto/`unit_id`/`timeout_ms` + polling + tamaño de pantalla. |
+| `config/hmi_state.json` | (runtime, gitignored) Último perfil seleccionado; si no existe, el HMI arranca sin perfil. |
 | `config/plc_profiles/generic_kinco.json` | **Perfil ACTIVO** (95 tags): mapeo simbólico→Modbus real. Tags clave: `MODE_AUTO`(4), `MODE_MANUAL`(5), `MODE_STEP`(6), `MODE_DEBUG`(7). |
 | `plc/generic_main.st` | Rutina ST de producción (2 ramas + mux Auto/Manual + alarmas). |
 | `tests/run_simulator.py` + `run_simulator.sh` | Simulador Modbus TCP con datos de demo (para probar sin PLC físico). |
@@ -43,7 +45,7 @@ Auto/Manual** (`SEL(S_MANUAL, Auto_*, CMD_*)`) para forzar salidas desde el HMI.
 | `plc/test_servo.il` | Programa PLC de **servo** (pulsos/dir/enable, AXIS 0). CRLF. |
 | `tests/test_io_hardware.py` | Prueba contra PLC fisico: `--hmi-to-plc`, `--plc-to-hmi`, `--scan`. |
 | `tests/test_servo_hardware.py` | Prueba de servo + descubrimiento M/V (`--scan`, `--enable`, `--move`, `--jog`). |
-| `tests/test_servo_sweep.py` | Barrido de frecuencia del servo (5 kHz..200 kHz) buscando el limite fiable; replica la secuencia JOG+/JOG- y reporta deltas de posicion. |
+| `tests/test_servo_sweep.py` | Barrido de frecuencia del servo (def. 30 kHz..40 kHz, paso 500 Hz; `--from/--to/--step` o `--freqs`) buscando el limite fiable; replica la secuencia JOG+/JOG- y reporta deltas de posicion. |
 | `hmi/ui/views/servo_test_view.py` | Pestana **"Test Servo"** (comandos %M + parametros %V). 4 secciones navegables: Estado, Control, Parametros, **Barrido**. |
 | `config/plc_profiles/test_kinco.json` | Perfil minimo **solo para pruebas fisicas** (no produccion). |
 | `docs/pruebas_plc_fisico.md` | Guia paso a paso de pruebas con el K615S-16DT. |
@@ -248,9 +250,12 @@ Pasos exactos (modelo: `outputs_debug_view.py`):
 ```
 
 **IMPORTANTE al hacer pruebas locales:**
-- La config por defecto apunta al **PLC real** (`192.168.1.10:502`). Para probar
-  sin PLC, apunta al simulador: o bien edita temporalmente `config/app_config.json`
-  a `127.0.0.1:5020`, o cambia IP/puerto en la pestaña **Configuración** del HMI.
+- Al arrancar, el HMI **no trae perfil**: IP/puerto por defecto `192.168.0.252:502`
+  (de `app_config.json`) y no conecta hasta elegir un perfil en **Configuración**.
+- Sin perfil guardado, al elegir uno se carga, **conecta** y hace polling; el
+  último perfil se recuerda en `config/hmi_state.json` y se precarga al reiniciar.
+- Para probar sin PLC, apunta al simulador editando `config/app_config.json`
+  a `127.0.0.1:5020` (o cambia IP en la pestaña **Configuración**).
 - **Siempre restaura** `config/app_config.json` a la IP real después de probar
   (haz backup antes con `cp config/app_config.json /tmp/...`).
 
@@ -259,6 +264,8 @@ Pasos exactos (modelo: `outputs_debug_view.py`):
 ## 11. Gotchas / qué evitar
 
 - No tocar `config/app_config.json` sin backup, ni commitearlo con IP del simulador.
+- El perfil por defecto es **ninguno** (no conecta hasta elegirlo); el último se
+  guarda en `config/hmi_state.json` (gitignored).
 - No hardcodear direcciones Modbus en el HMI; todo debe pasar por el perfil JSON.
 - Al forzar salidas (modo manual) recuerda que se requiere `S_MANUAL = ON` en el PLC.
 - No edites `hmi/comms/plc_adapter.py` salvo que cambies el protocolo de comunicación.

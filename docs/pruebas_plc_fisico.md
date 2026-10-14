@@ -283,16 +283,21 @@ desploma (ratio < 0.85) o no retorna al origen, se marca `REVISAR`
 **Por script** (`tests/test_servo_sweep.py`):
 
 ```bash
-# Barrido completo 5 kHz .. 200 kHz (def. 5000,7500,...,150000,200000)
+# Barrido por defecto 30 kHz .. 40 kHz (paso 500 Hz)
 .venv/bin/python tests/test_servo_sweep.py --ip 192.168.0.252
 
-# Secuencia y tiempos personalizados
+# Generar la secuencia con --from/--to/--step
+.venv/bin/python tests/test_servo_sweep.py --ip 192.168.0.252 \
+    --from 30000 --to 40000 --step 500
+
+# Lista explicita y tiempos personalizados
 .venv/bin/python tests/test_servo_sweep.py --ip 192.168.0.252 \
     --freqs "5000,10000,20000,40000,80000,160000,200000" --jog-time 0.5
 ```
 
-Opciones: `--jog-time` (s), `--settle` (s), `--minf`, `--mode`, `--dirc`,
-`--threshold` (ratio minimo), `--no-disable` (no apagar el servo al terminar).
+Opciones: `--freqs` (lista explicita, tiene prioridad), `--from/--to/--step`
+(secuencia por codigo), `--jog-time` (s), `--settle` (s), `--minf`, `--mode`,
+`--dirc`, `--threshold` (ratio minimo), `--no-disable` (no apagar el servo).
 
 **Por HMI**: pestana **Test Servo** -> seccion **BARRIDO** (flechas ▲/▼ hasta
 llegar a `BARRIDO`). Editar la lista de frecuencias, fijar el tiempo de JOG y el

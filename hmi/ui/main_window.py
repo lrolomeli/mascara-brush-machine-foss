@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
 )
 
 from hmi.comms.modbus_worker import ModbusWorker
+from hmi.config_state import save_active_profile
 from hmi.ui.widgets import ModeToggle
 from hmi.ui.views.manual_view import ManualView
 from hmi.ui.views.outputs_debug_view import OutputsDebugView
@@ -153,9 +154,13 @@ class AlarmBar(QFrame):
 class MainWindow(QMainWindow):
     """Ventana principal HMI con sidebar de navegacion y controles."""
 
-    def __init__(self, worker: ModbusWorker):
+    def __init__(self, worker: ModbusWorker, ip: str = "192.168.0.252",
+                 port: int = 502, initial_profile: str | None = None):
         super().__init__()
         self._worker = worker
+        self._ip = ip
+        self._port = port
+        self._initial_profile = initial_profile
         self._current_view = "auto"
         self._is_manual_mode = True
         self._mode_hold_until = 0.0
@@ -196,7 +201,8 @@ class MainWindow(QMainWindow):
         self._servo_test_view = ServoTestView()
         self._sensors_view = SensorsView()
         self._outputs_debug_view = OutputsDebugView()
-        self._settings_view = SettingsView()
+        self._settings_view = SettingsView(ip=self._ip, port=self._port,
+                                           initial_profile=self._initial_profile)
 
         self._stacked.addWidget(self._sensors_view)
         self._stacked.addWidget(self._outputs_debug_view)
@@ -638,7 +644,12 @@ class MainWindow(QMainWindow):
 
     @Slot(str)
     def _on_profile_changed(self, profile_path: str) -> None:
+        if not profile_path:
+            return
         self._worker.load_new_profile(profile_path)
+        if not self._worker.isRunning():
+            self._worker.start()
+        save_active_profile(Path(profile_path).stem)
         logger.info("Perfil cambiado a: %s", self._worker.adapter.profile.name)
 
     @Slot(str, int)

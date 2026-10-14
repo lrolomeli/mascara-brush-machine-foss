@@ -111,9 +111,11 @@ simulador: `e` (E-Stop), `h3`/`h8` (toggle alarmas), `s` (estado), `q` (salir).
 ./run_hmi.sh
 ```
 
-> Por defecto lee `config/app_config.json`, que apunta al PLC real
-> (`192.168.1.10:502`). Para probar contra el simulador, cambia la IP/puerto a
-> `127.0.0.1:5020` en la pestaña **Configuración**, o edita temporalmente el JSON.
+> Al arrancar **no hay perfil seleccionado**: la IP/puerto por defecto es
+> `192.168.0.252:502` (de `config/app_config.json`) y no conecta hasta elegir un
+> perfil en la pestaña **Configuración**. El último perfil se recuerda en
+> `config/hmi_state.json` y se precarga al reiniciar. Para probar contra el
+> simulador, cambia la IP/puerto a `127.0.0.1:5020` o edita el JSON.
 
 ---
 
@@ -198,7 +200,8 @@ Perfiles incluidos:
 - `generic_modbus.json` — perfil genérico de referencia.
 - `delta_dvp.json` — ejemplo Delta DVP.
 
-Selecciona el perfil activo en `config/app_config.json` o en la pestaña Configuración.
+Selecciona el perfil activo en la pestaña Configuración (por defecto ninguno; el
+último elegido se recuerda en `config/hmi_state.json`).
 
 ---
 
@@ -245,7 +248,7 @@ Selecciona el perfil activo en `config/app_config.json` o en la pestaña Configu
 .venv/bin/python tests/test_servo_hardware.py --ip 192.168.0.252 --scan
 .venv/bin/python tests/test_servo_hardware.py --ip 192.168.0.252 --status
 
-# Barrido de frecuencia del servo (buscar el limite fiable, 5 kHz..200 kHz)
+# Barrido de frecuencia del servo (def. 30 kHz..40 kHz, paso 500 Hz)
 .venv/bin/python tests/test_servo_sweep.py --ip 192.168.0.252
 ```
 
