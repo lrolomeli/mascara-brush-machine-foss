@@ -20,6 +20,20 @@ from PySide6.QtWidgets import (
 )
 
 
+def split_dint(value: int) -> tuple[int, int]:
+    """Divide un entero de 32 bits con signo en (word_bajo, word_alto)."""
+    v = value & 0xFFFFFFFF
+    return v & 0xFFFF, (v >> 16) & 0xFFFF
+
+
+def join_dint(lo: int, hi: int) -> int:
+    """Recombina dos words en un entero de 32 bits con signo."""
+    v = ((hi & 0xFFFF) << 16) | (lo & 0xFFFF)
+    if v & 0x80000000:
+        v -= 0x100000000
+    return v
+
+
 class StatusLED(QWidget):
     """Indicador LED circular con label."""
 

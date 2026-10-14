@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from hmi.ui.widgets import SectionFrame, ServoPositionDisplay
+from hmi.ui.widgets import SectionFrame, ServoPositionDisplay, join_dint
 
 
 class ServoView(QWidget):
@@ -343,7 +343,18 @@ class ServoView(QWidget):
         self.position_changed.emit(value)
 
     def update_data(self, data: dict) -> None:
-        self._display_actual.set_value(data.get("SERVO_POS_ACTUAL", 0))
-        self._display_target.set_value(data.get("SERVO_POS_TARGET", 0))
+        self._display_actual.set_value(self._read_dint(data, "SERVO_POSACT",
+                                                      "SERVO_POS_ACTUAL"))
+        self._display_target.set_value(self._read_dint(data, "SERVO_POS",
+                                                       "SERVO_POS_TARGET"))
         self._display_speed.set_value(data.get("SERVO_ACTUAL_SPEED", 0))
         self._display_torque.set_value(data.get("SERVO_TORQUE", 0))
+
+    @staticmethod
+    def _read_dint(data: dict, pair_prefix: str, fallback_tag: str) -> int:
+        """Lee un DINT de dos words (LO/HI); si no existe, usa el tag simple."""
+        lo = data.get(f"{pair_prefix}_LO")
+        hi = data.get(f"{pair_prefix}_HI")
+        if lo is not None and hi is not None:
+            return join_dint(int(lo), int(hi))
+        return data.get(fallback_tag, 0)

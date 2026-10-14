@@ -3,10 +3,12 @@
 Pensada para el programa `plc/test_servo.il`:
   - Entradas: IN_POSITION (I0.0), HOME_SENSOR (I0.1).
   - Salidas:  SERVO_PULSE (Q0.0), SERVO_DIR (Q0.2), SERVO_ENABLE (Q0.3).
-  - Comandos: CMD_ENABLE/HOME/MOVE/JOG_FWD/JOG_REV/STOP (memorias %M).
+  - Comandos: CMD_ENABLE/HOME/MOVE/JOG_FWD/JOG_REV/STOP (memorias %M / %V).
   - Parametros: SERVO_MINF/MAXF/TIME/POS/DIRC/MODE (holding registers).
 
 Esta vista NO toca las salidas fisicas: solo escribe comandos y parametros.
+
+Secciones navegables: Estado, Control, Parametros.
 """
 
 from __future__ import annotations
@@ -17,6 +19,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QPushButton,
     QSpinBox,
     QVBoxLayout,
     QWidget,
@@ -27,21 +30,9 @@ from hmi.ui.widgets import (
     SectionFrame,
     ServoPositionDisplay,
     SimpleLED,
+    join_dint,
+    split_dint,
 )
-
-
-def split_dint(value: int) -> tuple[int, int]:
-    """Divide un entero de 32 bits con signo en (word_bajo, word_alto)."""
-    v = value & 0xFFFFFFFF
-    return v & 0xFFFF, (v >> 16) & 0xFFFF
-
-
-def join_dint(lo: int, hi: int) -> int:
-    """Recombina dos words en un entero de 32 bits con signo."""
-    v = ((hi & 0xFFFF) << 16) | (lo & 0xFFFF)
-    if v & 0x80000000:
-        v -= 0x100000000
-    return v
 
 
 class ServoTestView(QWidget):
@@ -51,6 +42,8 @@ class ServoTestView(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._current_section = 0
+        self._sections: list[QWidget] = []
         self._build_ui()
 
     # ------------------------------------------------------------------
@@ -58,8 +51,8 @@ class ServoTestView(QWidget):
     # ------------------------------------------------------------------
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
-        root.setSpacing(12)
-        root.setContentsMargins(20, 20, 20, 20)
+        root.setSpacing(10)
+        root.setContentsMargins(20, 10, 20, 10)
 
         title = QLabel("TEST SERVO (PULSO + DIRECCION + ENABLE)")
         title.setFont(QFont("Segoe UI", 18, QFont.Weight.Bold))
@@ -67,15 +60,92 @@ class ServoTestView(QWidget):
         title.setStyleSheet("color: #e94560; padding: 8px;")
         root.addWidget(title)
 
+        nav_layout = QHBoxLayout()
+        nav_layout.setSpacing(20)
+
+        self._btn_up = self._nav_button("▲")
+        self._btn_up.clicked.connect(self._on_nav_up)
+        nav_layout.addWidget(self._btn_up)
+
+        self._section_title = QLabel("ESTADO")
+        self._section_title.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
+        self._section_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._section_title.setStyleSheet("color: #ffffff; padding: 8px;")
+        nav_layout.addWidget(self._section_title, stretch=1)
+
+        self._btn_down = self._nav_button("▼")
+        self._btn_down.clicked.connect(self._on_nav_down)
+        nav_layout.addWidget(self._btn_down)
+
+        root.addLayout(nav_layout)
+
+        self._container = QVBoxLayout()
+        self._container.setSpacing(15)
+        root.addLayout(self._container, stretch=1)
+
+        self._build_status_section()
+        self._build_control_section()
+        self._build_params_section()
+
+        self._show_section(0)
+        root.addStretch()
+
+    def _nav_button(self, text: str) -> QPushButton:
+        btn = QPushButton(text)
+        btn.setFixedSize(60, 40)
+        btn.setFont(QFont("Segoe UI", 16, QFont.Weight.Bold))
+        btn.setStyleSheet("""
+            QPushButton {
+                background-color: #16213e;
+                color: #e94560;
+                border: 2px solid #e94560;
+                border-radius: 8px;
+            }
+            QPushButton:hover {
+                background-color: #e94560;
+                color: #ffffff;
+            }
+        """)
+        return btn
+
+    def _build_status_section(self) -> None:
+        section = QWidget(self)
+        section.setVisible(False)
+        layout = QVBoxLayout(section)
+        layout.setSpacing(15)
+
         top_row = QHBoxLayout()
         top_row.setSpacing(15)
         top_row.addWidget(self._build_inputs_frame(), stretch=1)
         top_row.addWidget(self._build_outputs_frame(), stretch=1)
-        root.addLayout(top_row)
+        layout.addLayout(top_row)
 
-        root.addWidget(self._build_control_frame())
-        root.addWidget(self._build_params_frame())
-        root.addStretch()
+        pos_row = QHBoxLayout()
+        self._display_pos = ServoPositionDisplay("Posicion actual (pulsos)")
+        pos_row.addWidget(self._display_pos)
+        pos_row.addStretch()
+        layout.addLayout(pos_row)
+
+        self._sections.append(section)
+        self._container.addWidget(section)
+
+    def _build_control_section(self) -> None:
+        section = QWidget(self)
+        section.setVisible(False)
+        layout = QVBoxLayout(section)
+        layout.setSpacing(15)
+        layout.addWidget(self._build_control_frame())
+        self._sections.append(section)
+        self._container.addWidget(section)
+
+    def _build_params_section(self) -> None:
+        section = QWidget(self)
+        section.setVisible(False)
+        layout = QVBoxLayout(section)
+        layout.setSpacing(15)
+        layout.addWidget(self._build_params_frame())
+        self._sections.append(section)
+        self._container.addWidget(section)
 
     def _build_inputs_frame(self) -> SectionFrame:
         frame = SectionFrame("Entradas")
@@ -114,47 +184,53 @@ class ServoTestView(QWidget):
     def _build_control_frame(self) -> SectionFrame:
         frame = SectionFrame("Control")
         layout = frame.content_layout
+        layout.setSpacing(20)
 
         row = QHBoxLayout()
         row.setSpacing(12)
 
-        self._btn_enable = IndustrialButton("ENABLE", "start", 140, 70)
+        self._btn_enable = IndustrialButton("ENABLE", "start", 180, 90)
         self._btn_enable.toggled.connect(
             lambda checked: self.write_tag.emit("CMD_ENABLE", checked))
         row.addWidget(self._btn_enable)
 
-        self._btn_home = IndustrialButton("HOME", "neutral", 140, 70)
+        self._btn_home = IndustrialButton("HOME", "neutral", 180, 90)
         self._btn_home.setCheckable(False)
         self._btn_home.clicked.connect(lambda: self._pulse("CMD_HOME"))
         row.addWidget(self._btn_home)
 
-        self._btn_move = IndustrialButton("MOVER", "neutral", 140, 70)
+        self._btn_move = IndustrialButton("MOVER", "neutral", 180, 90)
         self._btn_move.setCheckable(False)
         self._btn_move.clicked.connect(lambda: self._pulse("CMD_MOVE"))
         row.addWidget(self._btn_move)
 
-        self._btn_jog_fwd = IndustrialButton("JOG +", "start", 140, 70)
+        layout.addLayout(row)
+
+        row2 = QHBoxLayout()
+        row2.setSpacing(12)
+
+        self._btn_jog_fwd = IndustrialButton("JOG +", "start", 180, 90)
         self._btn_jog_fwd.setCheckable(False)
         self._btn_jog_fwd.pressed.connect(
             lambda: self.write_tag.emit("CMD_JOG_FWD", True))
         self._btn_jog_fwd.released.connect(
             lambda: self.write_tag.emit("CMD_JOG_FWD", False))
-        row.addWidget(self._btn_jog_fwd)
+        row2.addWidget(self._btn_jog_fwd)
 
-        self._btn_jog_rev = IndustrialButton("JOG -", "pause", 140, 70)
+        self._btn_jog_rev = IndustrialButton("JOG -", "pause", 180, 90)
         self._btn_jog_rev.setCheckable(False)
         self._btn_jog_rev.pressed.connect(
             lambda: self.write_tag.emit("CMD_JOG_REV", True))
         self._btn_jog_rev.released.connect(
             lambda: self.write_tag.emit("CMD_JOG_REV", False))
-        row.addWidget(self._btn_jog_rev)
+        row2.addWidget(self._btn_jog_rev)
 
-        self._btn_stop = IndustrialButton("STOP", "red_stop", 140, 70)
+        self._btn_stop = IndustrialButton("STOP", "red_stop", 180, 90)
         self._btn_stop.setCheckable(False)
         self._btn_stop.clicked.connect(lambda: self._pulse("CMD_STOP"))
-        row.addWidget(self._btn_stop)
+        row2.addWidget(self._btn_stop)
 
-        layout.addLayout(row)
+        layout.addLayout(row2)
         return frame
 
     def _build_params_frame(self) -> SectionFrame:
@@ -180,14 +256,11 @@ class ServoTestView(QWidget):
         layout.addLayout(grid)
 
         apply_row = QHBoxLayout()
-        self._btn_apply = IndustrialButton("APLICAR PARAMETROS", "neutral", 280, 60)
+        self._btn_apply = IndustrialButton("APLICAR PARAMETROS", "neutral", 320, 70)
         self._btn_apply.setCheckable(False)
         self._btn_apply.clicked.connect(self._on_apply_params)
         apply_row.addWidget(self._btn_apply)
-
-        self._display_pos = ServoPositionDisplay("Posicion actual (pulsos)")
         apply_row.addStretch()
-        apply_row.addWidget(self._display_pos)
         layout.addLayout(apply_row)
         return frame
 
@@ -200,7 +273,7 @@ class ServoTestView(QWidget):
         sp = QSpinBox()
         sp.setRange(lo, hi)
         sp.setValue(default)
-        sp.setMinimumWidth(110)
+        sp.setMinimumWidth(120)
         sp.setStyleSheet("""
             QSpinBox {
                 background-color: #0d1117;
@@ -219,6 +292,25 @@ class ServoTestView(QWidget):
         cell.addWidget(self._label(text))
         cell.addWidget(widget)
         grid.addLayout(cell, row, col)
+
+    # ------------------------------------------------------------------
+    # Navegacion por secciones
+    # ------------------------------------------------------------------
+    def _show_section(self, index: int) -> None:
+        for i, section in enumerate(self._sections):
+            section.setVisible(i == index)
+
+        titles = ["ESTADO", "CONTROL", "PARAMETROS"]
+        self._section_title.setText(titles[index])
+        self._current_section = index
+
+    def _on_nav_up(self) -> None:
+        new_index = (self._current_section - 1) % len(self._sections)
+        self._show_section(new_index)
+
+    def _on_nav_down(self) -> None:
+        new_index = (self._current_section + 1) % len(self._sections)
+        self._show_section(new_index)
 
     # ------------------------------------------------------------------
     # Acciones
@@ -248,7 +340,9 @@ class ServoTestView(QWidget):
         self._led_dir.set_on(bool(data.get("SERVO_DIR", False)))
         self._led_enable.set_on(bool(data.get("SERVO_ENABLE", False)))
 
-        lo = data.get("SERVO_POSACT_LO", 0)
-        hi = data.get("SERVO_POSACT_HI", 0)
+        lo = data.get("SERVO_POSACT_LO")
+        hi = data.get("SERVO_POSACT_HI")
         if lo is not None and hi is not None:
             self._display_pos.set_value(join_dint(int(lo), int(hi)))
+        else:
+            self._display_pos.set_value(data.get("SERVO_POS_ACTUAL", 0))
